@@ -25,7 +25,6 @@
 # called "data".
 require 'nokogiri'
 require 'open-uri'
-require 'date'
 
 def scrape_details(url)
   full_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{url}"
@@ -50,11 +49,14 @@ def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   document = Nokogiri::HTML(open(url))
 
-  date_link_element = document.at_css('span#sidatum a')
-  if date_link_element && date_link_element['href']
-    scrape_details(date_link_element['href'])
-  else
-    puts "Kein Datum-Link gefunden oder 'href'-Attribut fehlt."
+  # Datum direkt aus dem Link extrahieren
+  document.css('a[href*="si010_r.asp?DD="]').each do |link|
+    day = link['href'][/DD=(\d+)/, 1]
+    month = link['href'][/MM=(\d+)/, 1]
+    year = link['href'][/YY=(\d+)/, 1]
+    formatted_date = "#{day}.#{month}.#{year}"
+    puts "Datum: #{formatted_date}, URL: #{link['href']}"
+    scrape_details(link['href'])
   end
 end
 
