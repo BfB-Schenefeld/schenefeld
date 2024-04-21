@@ -25,17 +25,23 @@
 # called "data".
 require 'open-uri'
 require 'nokogiri'
+require 'date'
 
-def simple_scrape
-  url = "https://www.example.com"
+def scrape_calendar_data(year, month)
+  url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   begin
-    html = open(url)
-    doc = Nokogiri::HTML(html)
-    title = doc.at_css('title').text
-    puts "Title of the page is: #{title}"
+    document = Nokogiri::HTML(open(url))
+    document.css('a[href*="si010_r.asp?DD="]').each do |link|
+      day = link['href'][/DD=(\d+)/, 1]
+      month = link['href'][/MM=(\d+)/, 1]
+      year = link['href'][/YY=(\d+)/, 1]
+      formatted_date = "#{day}.#{month}.#{year}"
+      puts "Datum: #{formatted_date}, URL: #{link['href']}"
+    end
   rescue StandardError => e
-    puts "Error during scraping: #{e.message}"
+    puts "Error during calendar data scrape: #{e.message}"
   end
 end
 
-simple_scrape
+# Test the function with a specific month and year
+scrape_calendar_data(2024, 3)
