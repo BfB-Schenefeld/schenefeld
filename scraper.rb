@@ -44,10 +44,11 @@ def scrape_calendar_data(year, month)
       date_part = date_raw[/\d+/] # Extract digit characters
       date = "#{day_part} #{date_part.rjust(2, '0')}" # Combine with a space and ensure two digits for date
 
-      puts "Date: #{date}, Time: #{time}, Meeting: #{meeting}, Location: #{location}, URL: #{link_full_url}"
+      puts "Datum: #{date}, Zeit: #{time}, Sitzung: #{meeting}, Ort: #{location}, URL: #{link_full_url}"
     end
   end
 end
 
 # Example: Scrape data for April 2024
 scrape_calendar_data(2024, 4)
+
