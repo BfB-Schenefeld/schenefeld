@@ -25,11 +25,10 @@
 # called "data".
 require 'nokogiri'
 require 'open-uri'
-require 'date'
 
 def scrape_details(url)
   document = Nokogiri::HTML(open(url))
-  
+
   document.css('tbody tr').each do |row|
     top_link = row.css('td.tonr a').first
     top_id = top_link['href'][/TOLFDNR=(\d+)/, 1]
@@ -55,11 +54,14 @@ def scrape_calendar_data(year, month)
     full_url = link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{link}" : nil
 
     if date_raw && full_url
-      # Neue Datumsformatierung
       date_parts = date_raw.match(/([A-Za-z]+)\s+(\d+)/)
-      formatted_date = "#{date_parts[1]}, #{date_parts[2].rjust(2, '0')}.#{month.to_s.rjust(2, '0')}.#{year}"
-      puts "Datum: #{formatted_date}, URL: #{full_url}"
-      scrape_details(full_url)
+      if date_parts
+        formatted_date = "#{date_parts[1]}, #{date_parts[2].rjust(2, '0')}.#{month.to_s.rjust(2, '0')}.#{year}"
+        puts "Datum: #{formatted_date}, URL: #{full_url}"
+        scrape_details(full_url)
+      else
+        puts "Datum konnte nicht verarbeitet werden: #{date_raw}"
+      end
     end
   end
 end
