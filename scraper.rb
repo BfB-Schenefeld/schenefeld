@@ -28,17 +28,22 @@ require 'open-uri'
 
 def scrape_details(url)
   document = Nokogiri::HTML(open(url))
-
+  
   document.css('tbody tr').each do |row|
+    # Tagesordnungspunkt und dessen Beschreibung
     top_link = row.css('td.tonr a').first
     top_id = top_link['href'][/TOLFDNR=(\d+)/, 1]
-    top_text = top_link.text.strip
+    top_description = row.css('td.tobetreff a').text.strip  # Betreff des Tagesordnungspunkts
 
+    # URL für Tagesordnungspunkt-Details
+    top_url = "https://www.sitzungsdienst-schenefeld.de/bi/to020_r.asp?TOLFDNR=#{top_id}"
+
+    # Beschlussvorlage-Link und ID
     vo_link = row.css('td.tovonr a').first
     vo_id = vo_link ? vo_link['href'][/VOLFDNR=(\d+)/, 1] : nil
-    vo_text = vo_link ? vo_link.text.strip : "Keine Beschlussvorlage"
+    vo_url = vo_link ? "https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=#{vo_id}" : "-"
 
-    puts "  Tagesordnungspunkt: #{top_text}, TOLFDNR: #{top_id}, Beschlussvorlage: #{vo_text}, VOLFDNR: #{vo_id}"
+    puts "  Tagesordnungspunkt: #{top_link.text.strip} #{top_description}, URL: #{top_url}, Beschlussvorlage: #{vo_url}"
   end
 end
 
@@ -58,5 +63,6 @@ def scrape_calendar_data(year, month)
   end
 end
 
-# Example: Scrape data for April 2024
+# Beispiel: Daten für April 2024 scrapen
 scrape_calendar_data(2024, 4)
+
