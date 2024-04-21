@@ -25,49 +25,49 @@
 # called "data".
 require 'open-uri'
 require 'nokogiri'
-require 'date'
+require 'csv'
 
-# Extrahiert Details von jeder Veranstaltungsseite
+# Function to scrape details from each event page
 def scrape_event_details(event_url)
-  begin
-    document = Nokogiri::HTML(open(event_url))
-    event_title = document.at_css('a[href*="to010_r.asp?SILFDNR="]').text.strip
-    time = document.at_css('td.time div').text.strip
-    room = document.at_css('td.raum div').text.strip
-    puts "#{Date.parse(event_url[/DD=(\d+)/, 1] + '.' + event_url[/MM=(\d+)/, 1] + '.' + event_url[/YY=(\d+)/, 1]).strftime('%a. %d.%m.%Y')} um #{time}: #{event_title}, Raum: #{room}, URL: #{event_url}"
+  puts "Accessing event page: #{event_url}"
+  document = Nokogiri::HTML(open(event_url))
+  
+  event_data = []
+  document.css('tr').each do |row|
+    index_number = row.css('td.tonr a').text.strip
+    betreff = row.css('td.tobetreff div a').text.strip
+    vorlage_link = row.at_css('td.tovonr a')
+    vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "No Vorlage"
+    vorlage_text = vorlage_link ? vorlage_link.text.strip : "No Vorlage"
 
-    document.css('tr').each do |row|
-      index_number = row.css('td.tonr a').text.strip
-      betreff = row.css('td.tobetreff div a').text.strip
-      vorlage_link = row.at_css('td.tovonr a')
-      vorlage_text = vorlage_link ? vorlage_link.text.strip : "keine Vorlage"
-      vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : ""
-
-      detail_output = "#{index_number}: #{betreff}"
-      detail_output += ", Vorlage #{vorlage_text}" unless vorlage_text == "keine Vorlage"
-      detail_output += ", Vorlagen-URL: #{vorlage_url}" unless vorlage_url.empty?
-      
-      puts detail_output
-    end
-  rescue StandardError => e
-    puts "Fehler beim Extrahieren von Details der Veranstaltungsseite: #{e.message}"
+    # Save data to an array
+    event_data << [index_number, betreff, vorlage_text, vorlage_url]
+    puts "Found: #{index_number}, Betreff: #{betreff}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
   end
+  return event_data
 end
 
-# Iteriert über Kalenderdaten und ruft Event-Details ab
+# Function to iterate over calendar data and fetch event details
 def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
-  begin
-    document = Nokogiri::HTML(open(url))
-    event_links = document.css('a[href*="to010_r.asp?SILFDNR="]').map { |link| "https://www.sitzungsdienst-schenefeld.de/bi/#{link['href']}" }
-    
-    puts "Sitzungen für #{Date::MONTHNAMES[month]} #{year}"
-    event_links.each { |link| scrape_event_details(link) }
-  rescue StandardError => e
-    puts "Fehler beim Extrahieren der Kalenderdaten: #{e.message}"
+  puts "Attempting to access URL: #{url}"
+  document = Nokogiri::HTML(open(url))
+  event_links = document.css('a[href*="to010_r.asp?SILFDNR="]').map { |link| "https://www.sitzungsdienst-schenefeld.de/bi/#{link['href']}" }
+  
+  all_event_data = []
+  event_links.each do |link|
+    all_event_data += scrape_event_details(link)
+  end
+  save_to_csv(all_event_data)
+end
+
+# Function to save data to CSV
+def save_to_csv(data)
+  CSV.open("event_details.csv", "wb") do |csv|
+    csv << ["Index Number", "Betreff", "Vorlage Text", "Vorlage URL"]
+    data.each { |row| csv << row }
   end
 end
 
-# Startet das Scraping für einen bestimmten Monat und Jahr
+# Start scraping
 scrape_calendar_data(2024, 3)
-
