@@ -25,7 +25,6 @@
 # called "data".
 require 'nokogiri'
 require 'open-uri'
-require 'date'
 
 def scrape_details(url)
   document = Nokogiri::HTML(open(url))
@@ -49,26 +48,20 @@ def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   document = Nokogiri::HTML(open(url))
 
-  document.css('tr').each do |row|
-    date_raw = row.at_css('td:nth-child(1)').text.strip rescue nil
-    link = row.at_css('td:nth-child(3) a')['href'] rescue nil
-    full_url = link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{link}" : nil
-
-    if date_raw && full_url
-      date_match = date_raw.match(/([A-Za-z]+)(\d+)/)
-      if date_match
-        date_object = Date.new(year, month, date_match[2].to_i)
-        formatted_date = date_object.strftime("%a, %d.%m.%Y")
-        puts "Datum: #{formatted_date}, URL: #{full_url}"
-        scrape_details(full_url)
-      else
-        puts "Datum konnte nicht verarbeitet werden: #{date_raw}"
-      end
+  document.css('span#sidatum a').each do |link|
+    date_raw = link.text.strip
+    if date_raw
+      formatted_date = Date.parse(date_raw).strftime("%a, %d.%m.%Y")
+      puts "Datum: #{formatted_date}, URL: #{link['href']}"
+      scrape_details("https://www.sitzungsdienst-schenefeld.de/bi/#{link['href']}")
+    else
+      puts "Datum konnte nicht verarbeitet werden: #{date_raw}"
     end
   end
 end
 
-# Beispiel: Daten für April 2024 scrapen
-scrape_calendar_data(2024, 4)
+# Beispiel: Daten für März 2024 scrapen
+scrape_calendar_data(2024, 3)
+
 
 
