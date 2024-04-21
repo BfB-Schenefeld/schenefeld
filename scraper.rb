@@ -26,29 +26,37 @@
 require 'nokogiri'
 require 'open-uri'
 
+def scrape_details(url)
+  document = Nokogiri::HTML(open(url))
+
+  document.css('tbody tr').each do |row|
+    top_link = row.css('td.tonr a').first
+    top_id = top_link['href'][/TOLFDNR=(\d+)/, 1]
+    top_text = top_link.text.strip
+
+    vo_link = row.css('td.tovonr a').first
+    vo_id = vo_link ? vo_link['href'][/VOLFDNR=(\d+)/, 1] : nil
+    vo_text = vo_link ? vo_link.text.strip : "Keine Beschlussvorlage"
+
+    puts "  Tagesordnungspunkt: #{top_text}, TOLFDNR: #{top_id}, Beschlussvorlage: #{vo_text}, VOLFDNR: #{vo_id}"
+  end
+end
+
 def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   document = Nokogiri::HTML(open(url))
 
   document.css('tr').each do |row|
     date_raw = row.at_css('td:nth-child(1)').text.strip rescue nil
-    time = row.at_css('td:nth-child(2)').text.strip rescue nil
-    meeting = row.at_css('td:nth-child(3)').text.strip rescue nil
-    location = row.at_css('td:nth-child(4)').text.strip rescue nil
     link = row.at_css('td:nth-child(3) a')['href'] rescue nil
-    link_full_url = link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{link}" : nil
+    full_url = link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{link}" : nil
 
-    if date_raw && time && meeting && location
-      # Extract and format the date
-      day_part = date_raw[/\D+/].strip # Extract non-digit characters and strip any extra whitespace
-      date_part = date_raw[/\d+/] # Extract digit characters
-      date = "#{day_part} #{date_part.rjust(2, '0')}" # Combine with a space and ensure two digits for date
-
-      puts "Datum: #{date}, Zeit: #{time}, Sitzung: #{meeting}, Ort: #{location}, URL: #{link_full_url}"
+    if date_raw && full_url
+      puts "Datum: #{date_raw}, URL: #{full_url}"
+      scrape_details(full_url)
     end
   end
 end
 
 # Example: Scrape data for April 2024
 scrape_calendar_data(2024, 4)
-
