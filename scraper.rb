@@ -30,16 +30,21 @@ def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   puts "Attempting to access URL: #{url}"
   begin
-    document = Nokogiri::HTML(URI.open(url))
+    document = Nokogiri::HTML(open(url))  # Use open directly as per Ruby 2.0.0
     puts "Page loaded successfully."
     links_found = document.css('a[href*="si010_r.asp?DD="]')
     puts "Number of matching links found: #{links_found.count}"
-    links_found.each do |link|
-      day = link['href'][/DD=(\d+)/, 1]
-      month = link['href'][/MM=(\d+)/, 1]
-      year = link['href'][/YY=(\d+)/, 1]
-      formatted_date = "#{day}.#{month}.#{year}"
-      puts "Datum: #{formatted_date}, URL: #{link['href']}"
+
+    if links_found.empty?
+      puts "No links matching the criteria were found."
+    else
+      links_found.each do |link|
+        day = link['href'][/DD=(\d+)/, 1]
+        month = link['href'][/MM=(\d+)/, 1]
+        year = link['href'][/YY=(\d+)/, 1]
+        formatted_date = "#{day}.#{month}.#{year}"
+        puts "Datum: #{formatted_date}, URL: #{link['href']}"
+      end
     end
   rescue StandardError => e
     puts "Error during calendar data scrape: #{e.message}"
@@ -47,4 +52,3 @@ def scrape_calendar_data(year, month)
 end
 
 scrape_calendar_data(2024, 3)
-
