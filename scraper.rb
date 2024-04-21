@@ -28,12 +28,12 @@ require 'open-uri'
 
 def scrape_details(url)
   document = Nokogiri::HTML(open(url))
-
+  
   document.css('tbody tr').each do |row|
     # Tagesordnungspunkt und dessen Beschreibung
     top_link = row.css('td.tonr a').first
     top_id = top_link['href'][/TOLFDNR=(\d+)/, 1]
-    top_description = row.css('td.tobetreff a').text.strip  # Betreff des Tagesordnungspunkts
+    top_description = row.css('td.tobetreff div a').text.strip  # Korrektur hier für Betreff des Tagesordnungspunkts
 
     # URL für Tagesordnungspunkt-Details
     top_url = "https://www.sitzungsdienst-schenefeld.de/bi/to020_r.asp?TOLFDNR=#{top_id}"
@@ -72,5 +72,3 @@ end
 
 # Beispiel: Daten für April 2024 scrapen
 scrape_calendar_data(2024, 4)
-
-
