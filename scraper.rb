@@ -28,14 +28,17 @@ require 'open-uri'
 
 def scrape_details(url)
   document = Nokogiri::HTML(open(url))
-
+  
   document.css('tbody tr').each do |row|
+    # Extrahieren der Tagesordnungspunkt-Informationen
     top_link = row.css('td.tonr a').first
     top_id = top_link['href'][/TOLFDNR=(\d+)/, 1]
     top_description = row.css('td.tobetreff div a').text.strip
 
+    # Volle URL für Tagesordnungspunkt-Details
     top_url = "https://www.sitzungsdienst-schenefeld.de/bi/to020_r.asp?TOLFDNR=#{top_id}"
 
+    # Extrahieren der Beschlussvorlage-Link und ID
     vo_link = row.css('td.tovonr a').first
     vo_id = vo_link ? vo_link['href'][/VOLFDNR=(\d+)/, 1] : nil
     vo_url = vo_link ? "https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=#{vo_id}" : "-"
