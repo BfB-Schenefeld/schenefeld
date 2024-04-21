@@ -28,7 +28,7 @@ require 'open-uri'
 
 def scrape_details(url)
   document = Nokogiri::HTML(open(url))
-  
+
   document.css('tbody tr').each do |row|
     # Tagesordnungspunkt und dessen Beschreibung
     top_link = row.css('td.tonr a').first
@@ -56,8 +56,15 @@ def scrape_calendar_data(year, month)
     link = row.at_css('td:nth-child(3) a')['href'] rescue nil
     full_url = link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{link}" : nil
 
+    # Korrekte Formatierung des Datums
+    if date_raw
+      day_part = date_raw[/[A-Za-z]+/].strip
+      date_part = date_raw[/\d+/]
+      formatted_date = "#{day_part} #{date_part.rjust(2, '0')}"
+    end
+
     if date_raw && full_url
-      puts "Datum: #{date_raw}, URL: #{full_url}"
+      puts "Datum: #{formatted_date}, URL: #{full_url}"
       scrape_details(full_url)
     end
   end
@@ -65,4 +72,5 @@ end
 
 # Beispiel: Daten für April 2024 scrapen
 scrape_calendar_data(2024, 4)
+
 
