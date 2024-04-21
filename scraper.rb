@@ -25,6 +25,7 @@
 # called "data".
 require 'nokogiri'
 require 'open-uri'
+require 'date'
 
 def scrape_details(url)
   document = Nokogiri::HTML(open(url))
@@ -32,7 +33,7 @@ def scrape_details(url)
   document.css('tbody tr').each do |row|
     top_link = row.css('td.tonr a').first
     top_id = top_link['href'][/TOLFDNR=(\d+)/, 1]
-    top_description = row.css('td.tobetreff a').text.strip  # Aktualisierter Selektor für den Betreff
+    top_description = row.css('td.tobetreff div a').text.strip
 
     top_url = "https://www.sitzungsdienst-schenefeld.de/bi/to020_r.asp?TOLFDNR=#{top_id}"
 
@@ -54,9 +55,10 @@ def scrape_calendar_data(year, month)
     full_url = link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{link}" : nil
 
     if date_raw && full_url
-      date_parts = date_raw.match(/([A-Za-z]+)\s+(\d+)/)
-      if date_parts
-        formatted_date = "#{date_parts[1]}, #{date_parts[2].rjust(2, '0')}.#{month.to_s.rjust(2, '0')}.#{year}"
+      date_match = date_raw.match(/([A-Za-z]+)(\d+)/)
+      if date_match
+        date_object = Date.new(year, month, date_match[2].to_i)
+        formatted_date = date_object.strftime("%a, %d.%m.%Y")
         puts "Datum: #{formatted_date}, URL: #{full_url}"
         scrape_details(full_url)
       else
@@ -68,4 +70,5 @@ end
 
 # Beispiel: Daten für April 2024 scrapen
 scrape_calendar_data(2024, 4)
+
 
