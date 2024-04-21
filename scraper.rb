@@ -28,7 +28,7 @@ require 'open-uri'
 
 def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
-  document = Nokogiri::HTML(URI.open(url))
+  document = Nokogiri::HTML(URI.open(url))  # Updated line
 
   # Assuming each meeting details are within <tr> tags
   document.css('tr').each do |row|
@@ -45,3 +45,4 @@ end
 
 # Example: Scrape data for April 2024
 scrape_calendar_data(2024, 4)
+
