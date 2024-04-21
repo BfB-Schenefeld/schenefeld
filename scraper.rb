@@ -25,20 +25,18 @@
 # called "data".
 require 'nokogiri'
 require 'open-uri'
+require 'date'
 
 def scrape_details(url)
   document = Nokogiri::HTML(open(url))
   
   document.css('tbody tr').each do |row|
-    # Tagesordnungspunkt und dessen Beschreibung
     top_link = row.css('td.tonr a').first
     top_id = top_link['href'][/TOLFDNR=(\d+)/, 1]
-    top_description = row.css('td.tobetreff div a').text.strip  # Korrektur hier für Betreff des Tagesordnungspunkts
+    top_description = row.css('td.tobetreff div a').text.strip
 
-    # URL für Tagesordnungspunkt-Details
     top_url = "https://www.sitzungsdienst-schenefeld.de/bi/to020_r.asp?TOLFDNR=#{top_id}"
 
-    # Beschlussvorlage-Link und ID
     vo_link = row.css('td.tovonr a').first
     vo_id = vo_link ? vo_link['href'][/VOLFDNR=(\d+)/, 1] : nil
     vo_url = vo_link ? "https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=#{vo_id}" : "-"
@@ -56,14 +54,10 @@ def scrape_calendar_data(year, month)
     link = row.at_css('td:nth-child(3) a')['href'] rescue nil
     full_url = link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{link}" : nil
 
-    # Korrekte Formatierung des Datums
-    if date_raw
-      day_part = date_raw[/[A-Za-z]+/].strip
-      date_part = date_raw[/\d+/]
-      formatted_date = "#{day_part} #{date_part.rjust(2, '0')}"
-    end
-
     if date_raw && full_url
+      # Neue Datumsformatierung
+      date_parts = date_raw.match(/([A-Za-z]+)\s+(\d+)/)
+      formatted_date = "#{date_parts[1]}, #{date_parts[2].rjust(2, '0')}.#{month.to_s.rjust(2, '0')}.#{year}"
       puts "Datum: #{formatted_date}, URL: #{full_url}"
       scrape_details(full_url)
     end
