@@ -25,12 +25,12 @@
 # called "data".
 require 'nokogiri'
 require 'open-uri'
+puts "Ruby version: #{RUBY_VERSION}"
 
 def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
-  document = Nokogiri::HTML(URI.open(url))  # Updated line
+  document = Nokogiri::HTML(URI.open(url))  # Ensure this line is correct
 
-  # Assuming each meeting details are within <tr> tags
   document.css('tr').each do |row|
     date = row.at_css('td:nth-child(1)').text.strip rescue nil
     time = row.at_css('td:nth-child(2)').text.strip rescue nil
@@ -45,4 +45,3 @@ end
 
 # Example: Scrape data for April 2024
 scrape_calendar_data(2024, 4)
-
