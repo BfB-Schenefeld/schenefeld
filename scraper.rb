@@ -39,9 +39,10 @@ def scrape_calendar_data(year, month)
     link_full_url = link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{link}" : nil
 
     if date_raw && time && meeting && location
-      # Adjust date to include leading zero
-      date_parts = date_raw.scan(/\D*(\d+)$/).flatten.first
-      date = date_parts ? date_raw.sub(/\d+$/, date_parts.rjust(2, '0')) : date_raw
+      # Extract and format the date
+      day_part = date_raw[/\D+/] # Extract non-digit characters
+      date_part = date_raw[/\d+/] # Extract digit characters
+      date = "#{day_part}#{date_part.rjust(2, '0')}" # Combine and ensure two digits for date
 
       puts "Date: #{date}, Time: #{time}, Meeting: #{meeting}, Location: #{location}, URL: #{link_full_url}"
     end
@@ -50,5 +51,4 @@ end
 
 # Example: Scrape data for April 2024
 scrape_calendar_data(2024, 4)
-
 
