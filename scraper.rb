@@ -25,6 +25,7 @@
 # called "data".
 require 'nokogiri'
 require 'open-uri'
+require 'date'
 
 def scrape_details(url)
   document = Nokogiri::HTML(open(url))
@@ -49,19 +50,19 @@ def scrape_calendar_data(year, month)
   document = Nokogiri::HTML(open(url))
 
   document.css('span#sidatum a').each do |link|
-    date_raw = link.text.strip
-    if date_raw
-      formatted_date = Date.parse(date_raw).strftime("%a, %d.%m.%Y")
-      puts "Datum: #{formatted_date}, URL: #{link['href']}"
+    date_text = link.text.strip
+    if date_text.match?(/\A\w{2}, \d{2}\.\d{2}\.\d{4}\z/)
+      puts "Datum: #{date_text}, URL: https://www.sitzungsdienst-schenefeld.de/bi/#{link['href']}"
       scrape_details("https://www.sitzungsdienst-schenefeld.de/bi/#{link['href']}")
     else
-      puts "Datum konnte nicht verarbeitet werden: #{date_raw}"
+      puts "Datum konnte nicht verarbeitet werden: #{date_text}"
     end
   end
 end
 
 # Beispiel: Daten für März 2024 scrapen
 scrape_calendar_data(2024, 3)
+
 
 
 
