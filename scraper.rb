@@ -25,13 +25,16 @@
 # called "data".
 require 'open-uri'
 require 'nokogiri'
-require 'date'
 
 def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
+  puts "Attempting to access URL: #{url}"
   begin
-    document = Nokogiri::HTML(open(url))
-    document.css('a[href*="si010_r.asp?DD="]').each do |link|
+    document = Nokogiri::HTML(URI.open(url))
+    puts "Page loaded successfully."
+    links_found = document.css('a[href*="si010_r.asp?DD="]')
+    puts "Number of matching links found: #{links_found.count}"
+    links_found.each do |link|
       day = link['href'][/DD=(\d+)/, 1]
       month = link['href'][/MM=(\d+)/, 1]
       year = link['href'][/YY=(\d+)/, 1]
@@ -43,5 +46,5 @@ def scrape_calendar_data(year, month)
   end
 end
 
-# Test the function with a specific month and year
 scrape_calendar_data(2024, 3)
+
