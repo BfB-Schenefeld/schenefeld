@@ -24,15 +24,18 @@
 # called "data.sqlite" in the current working directory which has at least a table
 # called "data".
 require 'open-uri'
+require 'nokogiri'
 
-def simple_test
+def simple_scrape
   url = "https://www.example.com"
   begin
-    content = open(url).read
-    puts "Successfully retrieved content from #{url}"
+    html = open(url)
+    doc = Nokogiri::HTML(html)
+    title = doc.at_css('title').text
+    puts "Title of the page is: #{title}"
   rescue StandardError => e
-    puts "Error during request: #{e.message}"
+    puts "Error during scraping: #{e.message}"
   end
 end
 
-simple_test
+simple_scrape
