@@ -54,7 +54,7 @@ def scrape_calendar_data(year, month)
     full_url = link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{link}" : nil
 
     if date_raw && full_url
-      date_parts = date_raw.match(/([A-Za-z]+)\s+(\d+)/)
+      date_parts = date_raw.match(/([A-Za-z]+)(\d+)/)
       if date_parts
         formatted_date = "#{date_parts[1]}, #{date_parts[2].rjust(2, '0')}.#{month.to_s.rjust(2, '0')}.#{year}"
         puts "Datum: #{formatted_date}, URL: #{full_url}"
