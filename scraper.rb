@@ -28,12 +28,15 @@ require 'nokogiri'
 
 def scrape_event_details(event_url)
   puts "Accessing event page: #{event_url}"
-  document = Nokogiri::HTML(open(event_url))
-
-  # Assuming the date is in a specific format or contained in a specific element
-  # This part needs to be adjusted based on actual HTML structure of the event page
-  date_text = document.at_css('specific_selector_for_date').text.strip
-  puts "Date found on event page: #{date_text}"
+  begin
+    document = Nokogiri::HTML(open(event_url))
+    # Extracting the date using the specific selector
+    date_link = document.at_css('span#sidatum a')
+    date_text = date_link.text.strip if date_link
+    puts "Date found on event page: #{date_text}"
+  rescue StandardError => e
+    puts "Error extracting details from event page: #{e.message}"
+  end
 end
 
 def scrape_calendar_data(year, month)
@@ -43,9 +46,13 @@ def scrape_calendar_data(year, month)
     document = Nokogiri::HTML(open(url))
     puts "Calendar page loaded successfully."
 
-    event_links = document.css('a[href*="to010_r.asp?SILFDNR="]').map { |link| "https://www.sitzungsdienst-schenefeld.de/bi/#{link['href']}" }
+    # Extracting links to individual event pages
+    event_links = document.css('a[href*="to010_r.asp?SILFDNR="]').map do |link|
+      "https://www.sitzungsdienst-schenefeld.de/bi/#{link['href']}"
+    end
     puts "Number of event links found: #{event_links.count}"
 
+    # Scraping each event page
     event_links.each do |link|
       scrape_event_details(link)
     end
@@ -55,3 +62,4 @@ def scrape_calendar_data(year, month)
 end
 
 scrape_calendar_data(2024, 3)
+
