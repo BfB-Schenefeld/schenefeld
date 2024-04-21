@@ -50,8 +50,12 @@ def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   document = Nokogiri::HTML(open(url))
 
-  date_link = document.at_css('span#sidatum a')['href']
-  scrape_details(date_link) if date_link
+  date_link_element = document.at_css('span#sidatum a')
+  if date_link_element && date_link_element['href']
+    scrape_details(date_link_element['href'])
+  else
+    puts "Kein Datum-Link gefunden oder 'href'-Attribut fehlt."
+  end
 end
 
 # Beispiel: Daten für März 2024 scrapen
