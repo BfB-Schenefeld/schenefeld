@@ -34,19 +34,22 @@ def scrape_event_details(event_url)
   
   event_data = []
   document.css('tr').each do |row|
-    # Prüfe, ob sinnvolle Daten vorhanden sind
-    if row.css('td.tonr a').any? && row.css('td.tobetreff div a').any?
-      index_number = row.css('td.tonr a').text.strip
-      betreff = row.css('td.tobetreff div a').text.strip
-      vorlage_link = row.at_css('td.tovonr a')
-      vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "Keine Vorlage"
-      vorlage_text = vorlage_link ? vorlage_link.text.strip : "Keine Vorlage"
+    index_number = row.css('td.tonr a').text.strip
+    # Überprüfe, ob ein Hyperlink vorhanden ist und extrahiere entsprechend den Text
+    betreff_link = row.css('td.tobetreff div a').first
+    betreff_text = if betreff_link
+                     betreff_link.text.strip
+                   else
+                     row.css('td.tobetreff div').text.strip
+                   end
+    vorlage_link = row.at_css('td.tovonr a')
+    vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "Keine Vorlage"
+    vorlage_text = vorlage_link ? vorlage_link.text.strip : "Keine Vorlage"
 
-      # Speichere Daten nur, wenn 'index_number' und 'betreff' nicht leer sind
-      if !index_number.empty? && !betreff.empty?
-        event_data << [index_number, betreff, vorlage_text, vorlage_url]
-        puts "Found: #{index_number}, Betreff: #{betreff}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
-      end
+    # Speichere Daten nur, wenn 'index_number' und 'betreff_text' nicht leer sind
+    if !index_number.empty? && !betreff_text.empty?
+      event_data << [index_number, betreff_text, vorlage_text, vorlage_url]
+      puts "Found: #{index_number}, Betreff: #{betreff_text}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
     end
   end
   return event_data
@@ -76,3 +79,4 @@ end
 
 # Start scraping
 scrape_calendar_data(2024, 3)
+
