@@ -32,17 +32,20 @@ def scrape_vorlagen_details(vorlagen_url)
   document = Nokogiri::HTML(open(vorlagen_url))
 
   # Extrahieren der Vorlagenbezeichnung
-  vorlagenbezeichnung = document.at_css('#header h1.title')&.text&.strip
+  vorlagenbezeichnung_element = document.at_css('#header h1.title')
+  vorlagenbezeichnung = vorlagenbezeichnung_element ? vorlagenbezeichnung_element.text.strip : "Keine Vorlagenbezeichnung gefunden"
   puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
 
   # Extrahieren des gesamten Texts von mainContent
-  vorlagenprotokolltext = document.at_css('#mainContent')&.inner_text&.strip
+  vorlagenprotokolltext_element = document.at_css('#mainContent')
+  vorlagenprotokolltext = vorlagenprotokolltext_element ? vorlagenprotokolltext_element.inner_text.strip : "Kein Text im Hauptinhalt gefunden"
   puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
 end
 
 # Beispiel-URL für die Funktion
 vorlagen_url = 'https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=4926'
 scrape_vorlagen_details(vorlagen_url)
+
 
 
 
