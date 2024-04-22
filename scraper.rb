@@ -26,11 +26,20 @@
 require 'open-uri'
 require 'nokogiri'
 require 'csv'
+require 'date'
 
 # Funktion zum Formatieren des Datums
 def format_date(day, month, year)
-  date = Date.new(year.to_i, month.to_i, day.to_i)
+  # Führende Nullen hinzufügen, falls nötig
+  day = day.rjust(2, '0')
+  month = month.rjust(2, '0')
+  
+  date_string = "#{day}.#{month}.#{year}"
+  date = Date.parse(date_string)
+  # Wochentag abkürzen (z.B. "Di" für Dienstag) und Datum formatieren
   date.strftime("%a., %d.%m.%Y") # Z.B. "Di., 05.03.2024"
+rescue ArgumentError
+  nil # Bei ungültigem Datum wird nil zurückgegeben
 end
 
 # Scrape Kalender-Daten inklusive aller Sitzungen (Ebene 1)
