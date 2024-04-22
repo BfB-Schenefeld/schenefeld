@@ -48,17 +48,24 @@ def scrape_calendar_data(year, month)
   document = Nokogiri::HTML(open(url))
 
   document.css('tr:not(.emptyRow)').each do |row|
-    dow = row.at_css('.dow')&.text&.strip
-    dom = row.at_css('.dom')&.text&.strip
-    time = row.at_css('.time div')&.text&.strip
+    dow_element = row.at_css('.dow')
+    dom_element = row.at_css('.dom')
+    time_element = row.at_css('.time div')
     title_element = row.at_css('.textCol a')
-    room = row.at_css('.raum div')&.text&.strip
+    room_element = row.at_css('.raum div')
 
-    next unless dow && dom && time && title_element && room
+    if dow_element && dom_element && time_element && title_element && room_element
+      dow = dow_element.text.strip
+      dom = dom_element.text.strip
+      time = time_element.text.strip
+      title = title_element.text.strip
+      url = "https://www.sitzungsdienst-schenefeld.de/bi/#{title_element['href']}"
+      room = room_element.text.strip
+      formatted_date = extract_and_format_date(dow, dom, month, year)
 
-    formatted_date = extract_and_format_date(dow, dom, month, year)
-    puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title_element.text.strip}, URL: #{'https://www.sitzungsdienst-schenefeld.de/bi/' + title_element['href']}, Raum: #{room}"
-    scrape_event_details('https://www.sitzungsdienst-schenefeld.de/bi/' + title_element['href'])
+      puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{url}, Raum: #{room}"
+      scrape_event_details(url)
+    end
   end
 end
 
@@ -67,19 +74,19 @@ def scrape_event_details(event_url)
   document = Nokogiri::HTML(open(event_url))
 
   document.css('tr').each do |row|
-    index_number = row.at_css('td.tonr a')&.text&.strip
-    betreff = row.at_css('td.tobetreff div a')&.text&.strip || row.at_css('td.tobetreff div')&.text&.strip
-    top_url = row.at_css('td.tobetreff div a')&['href']
+    index_number = row.at_css('td.tonr a').text.strip rescue ''
+    betreff = row.at_css('td.tobetreff div a').text.strip rescue row.at_css('td.tobetreff div').text.strip
+    top_url = row.at_css('td.tobetreff div a')['href'] rescue nil
     top_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{top_url}" if top_url
     vorlage_link = row.at_css('td.tovonr a')
-    vorlage_text = vorlage_link&.text&.strip || "-"
+    vorlage_text = vorlage_link ? vorlage_link.text.strip : "-"
     vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "-"
 
-    next unless index_number && betreff
-
-    puts "Gefunden: #{index_number}, Betreff: #{betreff}, TOP-URL: #{top_url}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
-    scrape_top_details(top_url) if top_url
-    scrape_vorlagen_details(vorlage_url) if vorlage_url != "-"
+    if !index_number.empty? && !betreff.empty?
+      puts "Gefunden: #{index_number}, Betreff: #{betreff}, TOP-URL: #{top_url}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
+      scrape_top_details(top_url) if top_url
+      scrape_vorlagen_details(vorlage_url) if vorlage_url != "-"
+    end
   end
 end
 
@@ -93,7 +100,7 @@ def scrape_top_details(top_url)
 
   vorlagen_betreff_element = document.at_css('span#vobetreff a')
   vorlagen_url = vorlagen_betreff_element ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}" : nil
-  puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_element&.text&.strip}, Vorlagen-URL: #{vorlagen_url}"
+  puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_element.text.strip if vorlagen_betreff_element}, Vorlagen-URL: #{vorlagen_url}"
   scrape_vorlagen_details(vorlagen_url) if vorlagen_url
 end
 
@@ -102,18 +109,19 @@ def scrape_vorlagen_details(vorlagen_url)
   puts "Zugriff auf Vorlagenseite: #{vorlagen_url}"
   document = Nokogiri::HTML(open(vorlagen_url))
 
-  vorlagenbezeichnung = document.at_css('#header h1.title')&.text&.strip || "Keine Vorlagenbezeichnung gefunden"
-  vorlagenprotokolltext = document.at_css('#mainContent')&.text&.gsub(/\s+/, ' ')&.strip || "Kein Vorlagenprotokolltext gefunden"
+  vorlagenbezeichnung = document.at_css('#header h1.title').text.strip rescue "Keine Vorlagenbezeichnung gefunden"
+  vorlagenprotokolltext = document.at_css('#mainContent').text.gsub(/\s+/, ' ').strip rescue "Kein Vorlagenprotokolltext gefunden"
   puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
   puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
 
-  vorlagen_pdf_url = document.at_css('a.doclink.pdf')&['href']
+  vorlagen_pdf_url = document.at_css('a.doclink.pdf')['href'] rescue nil
   vorlagen_pdf_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_pdf_url}" if vorlagen_pdf_url
   puts "Vorlagen-PDF-URL: #{vorlagen_pdf_url}"
 end
 
 # Startpunkt
 scrape_calendar_data('2024', '3')
+
 
 
 
