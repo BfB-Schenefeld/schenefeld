@@ -30,11 +30,12 @@ require 'nokogiri'
 def scrape_top_details(top_url)
   puts "Zugriff auf TOP-Seite: #{top_url}"
   document = Nokogiri::HTML(open(top_url))
-  
+  base_url = "https://www.sitzungsdienst-schenefeld.de/bi/"
+
   # Extraktion der Vorlagen-Betreffs, wenn vorhanden
   vorlagen_betreff_element = document.at_css('span#vobetreff a')
   vorlagen_betreff_text, vorlagen_url = if vorlagen_betreff_element
-    [vorlagen_betreff_element.text.strip, "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"]
+    [vorlagen_betreff_element.text.strip, base_url + vorlagen_betreff_element['href']]
   else
     ["-", "-"]
   end
@@ -42,12 +43,12 @@ def scrape_top_details(top_url)
 
   # Extraktion des TOP-Sammel-PDFs, wenn vorhanden
   sammel_pdf_link = document.at_css('a.doclink.pdf')
-  sammel_pdf_url = sammel_pdf_link ? sammel_pdf_link['href'] : "-"
+  sammel_pdf_url = sammel_pdf_link ? base_url + sammel_pdf_link['href'] : "-"
   puts "Sammel-PDF URL: #{sammel_pdf_url}"
 
   # Extraktion von Anlagen-PDFs, wenn vorhanden
   anlagen_pdf_links = document.css('a.attlink.pdf').map do |link|
-    link['href']
+    base_url + link['href']
   end
   puts "Anlagen-PDF URLs: #{anlagen_pdf_links.join(', ')}"
 
