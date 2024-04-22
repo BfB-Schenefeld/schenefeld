@@ -30,13 +30,13 @@ require 'date'
 
 # Funktion zum Formatieren des Datums
 def format_date(day, month, year)
-  # Führende Nullen hinzufügen, falls nötig
-  day = day.rjust(2, '0')
-  month = month.rjust(2, '0')
+  # Stelle sicher, dass Tag und Monat als Strings behandelt werden
+  day_s = day.to_s.rjust(2, '0')
+  month_s = month.to_s.rjust(2, '0')
   
-  date_string = "#{day}.#{month}.#{year}"
-  date = Date.parse(date_string)
-  # Wochentag abkürzen (z.B. "Di" für Dienstag) und Datum formatieren
+  # Erstelle ein Datum-Objekt mit dem formatierten Tag und Monat
+  date = Date.new(year.to_i, month_s.to_i, day_s.to_i)
+  # Formatierung des Datums im gewünschten Format
   date.strftime("%a., %d.%m.%Y") # Z.B. "Di., 05.03.2024"
 rescue ArgumentError
   nil # Bei ungültigem Datum wird nil zurückgegeben
