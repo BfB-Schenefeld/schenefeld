@@ -26,33 +26,24 @@
 require 'open-uri'
 require 'nokogiri'
 
-# Funktion zum Scrapen von Details einer TOP-Seite (Ebene 3)
-def scrape_top_details(top_url)
-  puts "Zugriff auf TOP-Seite: #{top_url}"
-  document = Nokogiri::HTML(open(top_url))
-  
-  # Extraktion des TOP-Protokolltextes ohne doppelte Überschriften
-  main_content_elements = document.css('#mainContent div.expandedDiv, #mainContent div.expandedTitle')
-  top_protokolltext = main_content_elements.map { |element| element.text.strip }.join(" ").gsub(/\s+/, ' ')
-  puts "TOP-Protokolltext: #{top_protokolltext}"
+# Funktion, um Details von der Ebene-4-Seite (Vorlagenseite) zu scrapen
+def scrape_vorlagen_details(vorlagen_url)
+  puts "Zugriff auf Vorlagenseite: #{vorlagen_url}"
+  document = Nokogiri::HTML(open(vorlagen_url))
 
-  # Extraktion der Vorlagen-Betreffs, wenn vorhanden
-  vorlagen_betreff_element = document.at_css('span#vobetreff a')
-  if vorlagen_betreff_element
-    vorlagen_betreff_text = vorlagen_betreff_element.text.strip
-    vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
-    puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_text}, Vorlagen-URL: #{vorlagen_url}"
-  else
-    puts "Keine Vorlage vorhanden."
-  end
+  # Extrahieren der Vorlagenbezeichnung
+  vorlagenbezeichnung = document.at_css('#header h1.title')&.text&.strip
+  puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
 
-  # Rückgabe des TOP-Protokolltextes und weiterer Details
-  return top_protokolltext
+  # Extrahieren des gesamten Texts von mainContent
+  vorlagenprotokolltext = document.at_css('#mainContent')&.inner_text&.strip
+  puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
 end
 
-# Beispiel-URL für eine TOP-Seite
-test_top_url = 'https://www.sitzungsdienst-schenefeld.de/bi/to020_r.asp?TOLFDNR=23884'
-scrape_top_details(test_top_url)
+# Beispiel-URL für die Funktion
+vorlagen_url = 'https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=4926'
+scrape_vorlagen_details(vorlagen_url)
+
 
 
 
