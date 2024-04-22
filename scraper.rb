@@ -44,11 +44,11 @@ def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   document = Nokogiri::HTML(open(url))
   document.css('tr:not(.emptyRow)').each do |row|
-    dow = row.at_css('.dow')&.text&.strip
-    dom = row.at_css('.dom')&.text&.strip
-    time = row.at_css('.time div')&.text&.strip
+    dow = row.at_css('.dow') ? row.at_css('.dow').text.strip : nil
+    dom = row.at_css('.dom') ? row.at_css('.dom').text.strip : nil
+    time = row.at_css('.time div') ? row.at_css('.time div').text.strip : nil
     title_element = row.at_css('.textCol a')
-    room = row.at_css('.raum div')&.text&.strip
+    room = row.at_css('.raum div') ? row.at_css('.raum div').text.strip : nil
 
     if dow && dom && time && title_element && room
       title = title_element.text.strip
@@ -63,8 +63,8 @@ end
 def scrape_event_details(event_url)
   document = Nokogiri::HTML(open(event_url))
   document.css('tr').each do |row|
-    index_number = row.at_css('td.tonr a')&.text&.strip rescue ''
-    betreff = row.at_css('td.tobetreff div a')&.text&.strip rescue row.at_css('td.tobetreff div')&.text&.strip
+    index_number = row.at_css('td.tonr a') ? row.at_css('td.tonr a').text.strip : ''
+    betreff = row.at_css('td.tobetreff div a') ? row.at_css('td.tobetreff div a').text.strip : (row.at_css('td.tobetreff div') ? row.at_css('td.tobetreff div').text.strip : '')
     top_link = row.at_css('td.tobetreff div a')
     top_url = top_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{top_link['href']}" : "-"
     vorlage_link = row.at_css('td.tovonr a')
@@ -80,17 +80,10 @@ def scrape_top_details(top_url)
   main_content_elements = document.css('#mainContent div.expandedDiv, #mainContent div.expandedTitle')
   top_protokolltext = main_content_elements.map { |element| element.text.strip }.join(" ").gsub(/\s+/, ' ')
   puts "TOP-Protokolltext: #{top_protokolltext}"
-  vorlagen_betreff_element = document.at_css('span#vobetreff a')
-  if vorlagen_betreff_element
-    vorlagen_betreff_text = vorlagen_betreff_element.text.strip
-    vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
-    puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_text}, Vorlagen-URL: #{vorlagen_url}"
-  else
-    puts "Keine Vorlage vorhanden."
-  end
 end
 
 scrape_calendar_data(2024, 3)
+
 
 
 
