@@ -29,12 +29,26 @@ require 'date'
 
 # Methode zur Extraktion und Formatierung des Datums
 def extract_and_format_date(dow, dom, month, year)
-  # Erstellen eines Datumsstrings im deutschen Format "Tag, DD.MM.YYYY"
-  formatted_date = "#{dow}, #{dom.rjust(2, '0')}.#{month.rjust(2, '0')}.#{year}"
+  # Führende Nullen sicherstellen
+  dom = dom.to_s.rjust(2, '0')
+  month = month.to_s.rjust(2, '0')
+
+  # Wochentag-Kürzel basierend auf dem Wochentag-String umwandeln
+  dow_translation = {
+    'Mo' => 'Mon',
+    'Di' => 'Tue',
+    'Mi' => 'Wed',
+    'Do' => 'Thu',
+    'Fr' => 'Fri',
+    'Sa' => 'Sat',
+    'So' => 'Sun'
+  }
+  dow_en = dow_translation[dow]
+
+  # Datum objekt erstellen und formatieren
+  date_str = "#{dow_en}, #{dom} #{Date::MONTHNAMES[month.to_i]} #{year}"
   begin
-    # Parsen des Datums im deutschen Format und Konvertieren in ein Datum-Objekt
-    date = Date.strptime(formatted_date, "%a, %d.%m.%Y")
-    # Rückgabe des formatierten Datums
+    date = Date.parse(date_str)
     date.strftime("%a., %d.%m.%Y") # Z.B. "Di., 05.03.2024"
   rescue ArgumentError
     'Invalid date'
@@ -49,20 +63,29 @@ def scrape_calendar_data(year, month)
 
   # Extraktion der Sitzungsdaten aus der Kalendertabelle
   document.css('tr:not(.emptyRow)').each do |row|
-    dow = row.at_css('.dow').text
-    dom = row.at_css('.dom').text.rjust(2, '0')
-    time = row.at_css('.time div').text
-    title = row.at_css('.textCol a').text
-    url = "https://www.sitzungsdienst-schenefeld.de/bi/#{row.at_css('.textCol a')['href']}"
-    room = row.at_css('.raum div').text
-    formatted_date = extract_and_format_date(dow, dom, month, year)
+    dow_element = row.at_css('.dow')
+    dom_element = row.at_css('.dom')
+    time_element = row.at_css('.time div')
+    title_element = row.at_css('.textCol a')
+    room_element = row.at_css('.raum div')
 
-    puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{url}, Raum: #{room}"
+    if dow_element && dom_element && time_element && title_element && room_element
+      dow = dow_element.text
+      dom = dom_element.text
+      time = time_element.text
+      title = title_element.text
+      url = "https://www.sitzungsdienst-schenefeld.de/bi/#{title_element['href']}"
+      room = room_element.text
+      formatted_date = extract_and_format_date(dow, dom, month, year)
+
+      puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{url}, Raum: #{room}"
+    end
   end
 end
 
 # Testaufruf für März 2024
 scrape_calendar_data('2024', '3')
+
 
 
 
