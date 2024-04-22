@@ -61,18 +61,28 @@ def scrape_calendar_data(year, month)
 end
 
 def scrape_event_details(event_url)
+  puts "Zugriff auf Sitzungsseite: #{event_url}"
   document = Nokogiri::HTML(open(event_url))
+
+  event_data = []
   document.css('tr').each do |row|
-    index_number = row.at_css('td.tonr a') ? row.at_css('td.tonr a').text.strip : ''
-    betreff = row.at_css('td.tobetreff div a') ? row.at_css('td.tobetreff div a').text.strip : row.at_css('td.tobetreff div').text.strip
-    top_url = row.at_css('td.tobetreff div a') ? "https://www.sitzungsdienst-schenefeld.de/bi/#{row.at_css('td.tobetreff div a')['href']}" : "-"
+    index_number_element = row.at_css('td.tonr a')
+    index_number = index_number_element ? index_number_element.text.strip : ""
+    betreff_element = row.at_css('td.tobetreff div a') || row.at_css('td.tobetreff div')
+    betreff = betreff_element ? betreff_element.text.strip : ""
+    top_url = betreff_element && betreff_element['href'] ? "https://www.sitzungsdienst-schenefeld.de/bi/#{betreff_element['href']}" : "-"
     vorlage_link = row.at_css('td.tovonr a')
-    vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "-"
-    puts "Gefunden: #{index_number}, Betreff: #{betreff}, TOP-URL: #{top_url}, Vorlage URL: #{vorlage_url}"
-    scrape_top_details(top_url) if top_url != "-"
-    scrape_vorlagen_details(vorlage_url) if vorlage_url != "-"
+    vorlage_text = vorlage_link ? vorlage_link.text.strip : "-"
+    vorlage_url = vorlage_link && vorlage_link['href'] ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "-"
+
+    if !index_number.empty? && !betreff.empty?
+      event_data << [index_number, betreff, top_url, vorlage_text, vorlage_url]
+      puts "Gefunden: #{index_number}, Betreff: #{betreff}, TOP-URL: #{top_url}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
+    end
   end
+  return event_data
 end
+
 
 def scrape_top_details(top_url)
   document = Nokogiri::HTML(open(top_url))
