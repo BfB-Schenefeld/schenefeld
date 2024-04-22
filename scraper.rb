@@ -44,23 +44,27 @@ def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   document = Nokogiri::HTML(open(url))
   document.css('tr:not(.emptyRow)').each do |row|
-    dow = row.at_css('.dow').text.strip
-    dom = row.at_css('.dom').text.strip
-    time = row.at_css('.time div').text.strip
-    title = row.at_css('.textCol a').text.strip
-    event_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{row.at_css('.textCol a')['href']}"
-    room = row.at_css('.raum div').text.strip
-    formatted_date = extract_and_format_date(dow, dom, month, year)
-    puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{event_url}, Raum: #{room}"
-    scrape_event_details(event_url)
+    dow = row.at_css('.dow')&.text&.strip
+    dom = row.at_css('.dom')&.text&.strip
+    time = row.at_css('.time div')&.text&.strip
+    title_element = row.at_css('.textCol a')
+    room = row.at_css('.raum div')&.text&.strip
+
+    if dow && dom && time && title_element && room
+      title = title_element.text.strip
+      event_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{title_element['href']}"
+      formatted_date = extract_and_format_date(dow, dom, month, year)
+      puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{event_url}, Raum: #{room}"
+      scrape_event_details(event_url)
+    end
   end
 end
 
 def scrape_event_details(event_url)
   document = Nokogiri::HTML(open(event_url))
   document.css('tr').each do |row|
-    index_number = row.at_css('td.tonr a').text.strip rescue ''
-    betreff = row.at_css('td.tobetreff div a').text.strip rescue row.at_css('td.tobetreff div').text.strip
+    index_number = row.at_css('td.tonr a')&.text&.strip rescue ''
+    betreff = row.at_css('td.tobetreff div a')&.text&.strip rescue row.at_css('td.tobetreff div')&.text&.strip
     top_link = row.at_css('td.tobetreff div a')
     top_url = top_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{top_link['href']}" : "-"
     vorlage_link = row.at_css('td.tovonr a')
@@ -78,21 +82,16 @@ def scrape_top_details(top_url)
   puts "TOP-Protokolltext: #{top_protokolltext}"
   vorlagen_betreff_element = document.at_css('span#vobetreff a')
   if vorlagen_betreff_element
+    vorlagen_betreff_text = vorlagen_betreff_element.text.strip
     vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
-    scrape_vorlagen_details(vorlagen_url)
+    puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_text}, Vorlagen-URL: #{vorlagen_url}"
+  else
+    puts "Keine Vorlage vorhanden."
   end
 end
 
-def scrape_vorlagen_details(vorlagen_url)
-  document = Nokogiri::HTML(open(vorlagen_url))
-  vorlagenbezeichnung = document.at_css('#header h1.title').text.strip
-  vorlagenprotokolltext = document.at_css('#mainContent').text.strip.gsub(/\s+/, ' ')
-  puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
-  puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
-end
-
-# Start des Scraping-Prozesses
 scrape_calendar_data(2024, 3)
+
 
 
 
