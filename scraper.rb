@@ -35,15 +35,15 @@ def scrape_event_details(event_url)
   document.css('tr').each do |row|
     index_number = row.css('td.tonr a').text.strip rescue ''
     betreff = row.css('td.tobetreff div a').text.strip rescue row.css('td.tobetreff div').text.strip
-    betreff_link = row.at_css('td.tobetreff div a')
-    betreff_url = betreff_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{betreff_link['href']}" : "-"
+    top_link = row.at_css('td.tobetreff div a')
+    top_url = top_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{top_link['href']}" : "-"
     vorlage_link = row.at_css('td.tovonr a')
     vorlage_text = vorlage_link ? vorlage_link.text.strip : "-"
     vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "-"
 
     if !index_number.empty? && !betreff.empty?
-      event_data << [index_number, betreff, betreff_url, vorlage_text, vorlage_url]
-      puts "Gefunden: #{index_number}, Betreff: #{betreff}, Betreff URL: #{betreff_url}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
+      event_data << [index_number, betreff, top_url, vorlage_text, vorlage_url]
+      puts "Gefunden: #{index_number}, Betreff: #{betreff}, TOP-URL: #{top_url}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
     end
   end
   return event_data
@@ -52,6 +52,7 @@ end
 # Beispiel-URL (bitte durch eine gültige URL ersetzen)
 test_url = 'https://www.sitzungsdienst-schenefeld.de/bi/to010_r.asp?SILFDNR=4967'
 scrape_event_details(test_url)
+
 
 
 
