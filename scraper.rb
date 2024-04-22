@@ -42,6 +42,8 @@ def scrape_vorlagen_details(vorlagen_url)
     vorlagenprotokolltext = vorlagenprotokolltext_element.text
     vorlagenprotokolltext = vorlagenprotokolltext.gsub(/\s+/, ' ').strip # Ersetzt mehrfache Leerzeichen durch ein einzelnes und entfernt führende/anhängende Leerzeichen
     vorlagenprotokolltext = vorlagenprotokolltext.gsub(/(?:\r?\n|\r)+/, ' ') # Ersetzt neue Zeilen durch ein Leerzeichen, um Text kompakter zu machen
+    # Entfernen von Aufdopplungen wie "Beschlussvorschlag ... Beschlussvorschlag"
+    vorlagenprotokolltext = vorlagenprotokolltext.gsub(/(\b\w+\b)\s*\.\.\.\s*\1/, '\1')
   else
     vorlagenprotokolltext = "Kein Text im Hauptinhalt gefunden"
   end
@@ -51,6 +53,7 @@ end
 # Beispiel-URL für die Funktion
 vorlagen_url = 'https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=4926'
 scrape_vorlagen_details(vorlagen_url)
+
 
 
 
