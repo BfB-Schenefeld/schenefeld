@@ -25,63 +25,37 @@
 # called "data".
 require 'open-uri'
 require 'nokogiri'
-require 'csv'
 require 'date'
 
-# Funktion zum Formatieren des Datums
-def format_date(day, month, year)
-  # Stelle sicher, dass Tag und Monat als Strings behandelt werden
-  day_s = day.to_s.rjust(2, '0')
-  month_s = month.to_s.rjust(2, '0')
-  
-  # Erstelle ein Datum-Objekt mit dem formatierten Tag und Monat
-  date = Date.new(year.to_i, month_s.to_i, day_s.to_i)
-  # Formatierung des Datums im gewünschten Format
-  date.strftime("%a., %d.%m.%Y") # Z.B. "Di., 05.03.2024"
+# Methode zur Extraktion und Formatierung des Datums
+def extract_and_format_date(dow, dom, month, year)
+  date = Date.parse("#{dow}, #{dom} #{Date::MONTHNAMES[month.to_i]} #{year}")
+  formatted_date = date.strftime("%a., %d.%m.%Y")
 rescue ArgumentError
-  nil # Bei ungültigem Datum wird nil zurückgegeben
+  'Invalid date'
 end
 
-# Scrape Kalender-Daten inklusive aller Sitzungen (Ebene 1)
+# Methode zum Scrapen der Kalenderdaten (Ebene 1)
 def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   puts "Zugriff auf Kalenderseite: #{url}"
-  document = Nokogiri::HTML(open(url))
-  
-  all_event_data = []
+  document = Nokogiri::HTML(URI.open(url))
+
+  # Extraktion der Sitzungsdaten aus der Kalendertabelle
   document.css('tr:not(.emptyRow)').each do |row|
-    day = row.css('.dom').text.strip
-    formatted_date = format_date(day, month, year)
-    time = row.css('.time div').text.strip
-    sitzung_title = row.css('.textCol a').text.strip
-    sitzung_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{row.css('.textCol a')[0]['href']}"
-    raum = row.css('.raum div').text.strip
-    
-    # Daten speichern, wenn sinnvoller Inhalt vorhanden ist
-    if !sitzung_title.empty?
-      event_data = {
-        date: formatted_date,
-        time: time,
-        title: sitzung_title,
-        url: sitzung_url,
-        room: raum
-      }
-      all_event_data << event_data
-      puts "Sitzung geplant am: #{formatted_date}, um: #{time}, Titel: #{sitzung_title}, Raum: #{raum}, URL: #{sitzung_url}"
-    end
-  end
+    dow = row.at_css('.dow').text
+    dom = row.at_css('.dom').text.rjust(2, '0')
+    time = row.at_css('.time div').text
+    title = row.at_css('.textCol a').text
+    url = "https://www.sitzungsdienst-schenefeld.de/bi/#{row.at_css('.textCol a')['href']}"
+    room = row.at_css('.raum div').text
+    formatted_date = extract_and_format_date(dow, dom, month, year)
 
-  save_to_csv(all_event_data)
-end
-
-# Daten in CSV speichern (Daten speichern)
-def save_to_csv(data)
-  CSV.open("event_details.csv", "wb") do |csv|
-    csv << ["Datum", "Uhrzeit", "Titel", "URL", "Raum"]
-    data.each { |row| csv << [row[:date], row[:time], row[:title], row[:url], row[:room]] }
+    puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{url}, Raum: #{room}"
   end
 end
 
-# Start des Scrapings (Scraping starten)
-scrape_calendar_data(2024, 3)
+# Testaufruf für März 2024
+scrape_calendar_data('2024', '3')
+
 
