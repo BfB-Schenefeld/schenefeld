@@ -33,7 +33,7 @@ def extract_and_format_date(dow, dom, month, year)
   dom = dom.to_s.rjust(2, '0')
   month = month.to_s.rjust(2, '0')
 
-  # Wochentag-Kürzel basierend auf dem Wochentag-String umwandeln
+  # Wochentag-Kürzel auf Deutsch umwandeln
   dow_translation = {
     'Mo' => 'Mon',
     'Di' => 'Tue',
@@ -49,7 +49,10 @@ def extract_and_format_date(dow, dom, month, year)
   date_str = "#{dow_en}, #{dom} #{Date::MONTHNAMES[month.to_i]} #{year}"
   begin
     date = Date.parse(date_str)
-    date.strftime("%a., %d.%m.%Y") # Z.B. "Di., 05.03.2024"
+    # Deutsche Abkürzungen für Wochentage
+    german_days = { 'Mon' => 'Mo.', 'Tue' => 'Di.', 'Wed' => 'Mi.', 'Thu' => 'Do.', 'Fri' => 'Fr.', 'Sat' => 'Sa.', 'Sun' => 'So.' }
+    german_day = german_days[date.strftime('%a')]
+    "#{german_day} #{date.strftime('%d.%m.%Y')}" # Z.B. "Di., 05.03.2024"
   rescue ArgumentError
     'Invalid date'
   end
