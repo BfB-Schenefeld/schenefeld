@@ -30,34 +30,24 @@ require 'nokogiri'
 def scrape_top_details(top_url)
   puts "Zugriff auf TOP-Seite: #{top_url}"
   document = Nokogiri::HTML(open(top_url))
-  base_url = "https://www.sitzungsdienst-schenefeld.de/bi/"
-
+  
   # Extraktion der Vorlagen-Betreffs, wenn vorhanden
   vorlagen_betreff_element = document.at_css('span#vobetreff a')
-  vorlagen_betreff_text, vorlagen_url = if vorlagen_betreff_element
-    [vorlagen_betreff_element.text.strip, base_url + vorlagen_betreff_element['href']]
+  if vorlagen_betreff_element
+    vorlagen_betreff_text = vorlagen_betreff_element.text.strip
+    vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
+    puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_text}, Vorlagen-URL: #{vorlagen_url}"
+    [vorlagen_betreff_text, vorlagen_url]
   else
+    puts "Keine Vorlage vorhanden."
     ["-", "-"]
   end
-  puts "Vorlagen-Betreff: #{vorlagen_betreff_text}, Vorlagen-URL: #{vorlagen_url}"
-
-  # Extraktion des TOP-Sammel-PDFs, wenn vorhanden
-  sammel_pdf_link = document.at_css('a.doclink.pdf')
-  sammel_pdf_url = sammel_pdf_link ? base_url + sammel_pdf_link['href'] : "-"
-  puts "Sammel-PDF URL: #{sammel_pdf_url}"
-
-  # Extraktion von Anlagen-PDFs, wenn vorhanden
-  anlagen_pdf_links = document.css('a.attlink.pdf').map do |link|
-    base_url + link['href']
-  end
-  puts "Anlagen-PDF URLs: #{anlagen_pdf_links.join(', ')}"
-
-  [vorlagen_betreff_text, vorlagen_url, sammel_pdf_url, anlagen_pdf_links]
 end
 
 # Beispiel-URL für eine TOP-Seite
-test_top_url = 'https://www.sitzungsdienst-schenefeld.de/bi/to020_r.asp?TOLFDNR=23716'
+test_top_url = 'https://www.sitzungsdienst-schenefeld.de/bi/to020_r.asp?TOLFDNR=23884'
 scrape_top_details(test_top_url)
+
 
 
 
