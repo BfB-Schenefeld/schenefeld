@@ -31,8 +31,9 @@ def scrape_top_details(top_url)
   puts "Zugriff auf TOP-Seite: #{top_url}"
   document = Nokogiri::HTML(open(top_url))
   
-  # Extraktion der kompletten Hauptinhalte
-  main_content = document.at_css('#mainContent').text.strip.gsub(/\s+/, ' ')
+  # Extraktion des Hauptinhalts ohne doppelte Überschriften
+  main_content_elements = document.css('#mainContent div.expandedDiv, #mainContent div.expandedTitle')
+  main_content = main_content_elements.map { |element| element.text.strip }.join(" ").gsub(/\s+/, ' ')
   puts "Hauptinhalt: #{main_content}"
 
   # Extraktion der Vorlagen-Betreffs, wenn vorhanden
@@ -41,10 +42,8 @@ def scrape_top_details(top_url)
     vorlagen_betreff_text = vorlagen_betreff_element.text.strip
     vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
     puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_text}, Vorlagen-URL: #{vorlagen_url}"
-    [vorlagen_betreff_text, vorlagen_url]
   else
     puts "Keine Vorlage vorhanden."
-    ["-", "-"]
   end
 
   # Rückgabe des Hauptinhalts und weiterer Details
@@ -54,6 +53,7 @@ end
 # Beispiel-URL für eine TOP-Seite
 test_top_url = 'https://www.sitzungsdienst-schenefeld.de/bi/to020_r.asp?TOLFDNR=23884'
 scrape_top_details(test_top_url)
+
 
 
 
