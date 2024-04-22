@@ -36,23 +36,26 @@ def scrape_vorlagen_details(vorlagen_url)
   vorlagenbezeichnung = vorlagenbezeichnung_element ? vorlagenbezeichnung_element.text.strip : "Keine Vorlagenbezeichnung gefunden"
   puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
 
-  # Extrahieren und Bereinigen des gesamten Texts von mainContent
+  # Extrahieren des gesamten Texts von mainContent
   vorlagenprotokolltext_element = document.at_css('#mainContent')
-  if vorlagenprotokolltext_element
-    vorlagenprotokolltext = vorlagenprotokolltext_element.text
-    vorlagenprotokolltext = vorlagenprotokolltext.gsub(/\s+/, ' ').strip # Ersetzt mehrfache Leerzeichen durch ein einzelnes und entfernt führende/anhängende Leerzeichen
-    vorlagenprotokolltext = vorlagenprotokolltext.gsub(/(?:\r?\n|\r)+/, ' ') # Ersetzt neue Zeilen durch ein Leerzeichen, um Text kompakter zu machen
-    # Entfernen von Aufdopplungen wie "Beschlussvorschlag ... Beschlussvorschlag"
-    vorlagenprotokolltext = vorlagenprotokolltext.gsub(/(\b\w+\b)\s*\.\.\.\s*\1/, '\1')
-  else
-    vorlagenprotokolltext = "Kein Text im Hauptinhalt gefunden"
-  end
+  vorlagenprotokolltext = vorlagenprotokolltext_element ? vorlagenprotokolltext_element.text.gsub(/\s+/, ' ').strip : "Kein Text im Hauptinhalt gefunden"
   puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
+
+  # Extrahieren der Vorlagen-PDF-URL
+  vorlagen_pdf_link = document.at_css('a.doclink.pdf')
+  vorlagen_pdf_url = vorlagen_pdf_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_pdf_link['href']}" : "Keine Vorlagen-PDF-URL gefunden"
+  puts "Vorlagen-PDF-URL: #{vorlagen_pdf_url}"
+
+  # Extrahieren der Vorlagen-Sammel-PDF-URL
+  sammel_pdf_link = document.at_css('a.doclink.pdf[typ="130"]')
+  sammel_pdf_url = sammel_pdf_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{sammel_pdf_link['href']}" : "Keine Vorlagen-Sammel-PDF-URL gefunden"
+  puts "Vorlagen-Sammel-PDF-URL: #{sammel_pdf_url}"
 end
 
 # Beispiel-URL für die Funktion
 vorlagen_url = 'https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=4926'
 scrape_vorlagen_details(vorlagen_url)
+
 
 
 
