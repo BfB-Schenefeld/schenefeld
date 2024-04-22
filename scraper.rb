@@ -25,69 +25,32 @@
 # called "data".
 require 'open-uri'
 require 'nokogiri'
-require 'date'
 
-# Methode zur Extraktion und Formatierung des Datums
-def extract_and_format_date(dow, dom, month, year)
-  # Führende Nullen sicherstellen
-  dom = dom.to_s.rjust(2, '0')
-  month = month.to_s.rjust(2, '0')
+# Funktion zum Scrapen von Details einer Sitzungswebseite
+def scrape_event_details(event_url)
+  puts "Zugriff auf Sitzungsseite: #{event_url}"
+  document = Nokogiri::HTML(URI.open(event_url))
 
-  # Wochentag-Kürzel auf Deutsch umwandeln
-  dow_translation = {
-    'Mo' => 'Mon',
-    'Di' => 'Tue',
-    'Mi' => 'Wed',
-    'Do' => 'Thu',
-    'Fr' => 'Fri',
-    'Sa' => 'Sat',
-    'So' => 'Sun'
-  }
-  dow_en = dow_translation[dow]
+  event_data = []
+  document.css('tr').each do |row|
+    index_number = row.css('td.tonr a').text.strip
+    betreff = row.css('td.tobetreff div a').text.strip
+    vorlage_link = row.at_css('td.tovonr a')
+    vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "Keine Vorlage"
+    vorlage_text = vorlage_link ? vorlage_link.text.strip : "Keine Vorlage"
 
-  # Datum objekt erstellen und formatieren
-  date_str = "#{dow_en}, #{dom} #{Date::MONTHNAMES[month.to_i]} #{year}"
-  begin
-    date = Date.parse(date_str)
-    # Deutsche Abkürzungen für Wochentage
-    german_days = { 'Mon' => 'Mo.', 'Tue' => 'Di.', 'Wed' => 'Mi.', 'Thu' => 'Do.', 'Fri' => 'Fr.', 'Sat' => 'Sa.', 'Sun' => 'So.' }
-    german_day = german_days[date.strftime('%a')]
-    "#{german_day} #{date.strftime('%d.%m.%Y')}" # Z.B. "Di., 05.03.2024"
-  rescue ArgumentError
-    'Invalid date'
-  end
-end
-
-# Methode zum Scrapen der Kalenderdaten (Ebene 1)
-def scrape_calendar_data(year, month)
-  url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
-  puts "Zugriff auf Kalenderseite: #{url}"
-  document = Nokogiri::HTML(open(url))
-
-  # Extraktion der Sitzungsdaten aus der Kalendertabelle
-  document.css('tr:not(.emptyRow)').each do |row|
-    dow_element = row.at_css('.dow')
-    dom_element = row.at_css('.dom')
-    time_element = row.at_css('.time div')
-    title_element = row.at_css('.textCol a')
-    room_element = row.at_css('.raum div')
-
-    if dow_element && dom_element && time_element && title_element && room_element
-      dow = dow_element.text
-      dom = dom_element.text
-      time = time_element.text
-      title = title_element.text
-      url = "https://www.sitzungsdienst-schenefeld.de/bi/#{title_element['href']}"
-      room = room_element.text
-      formatted_date = extract_and_format_date(dow, dom, month, year)
-
-      puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{url}, Raum: #{room}"
+    if !index_number.empty? && !betreff.empty?
+      event_data << [index_number, betreff, vorlage_text, vorlage_url]
+      puts "Gefunden: #{index_number}, Betreff: #{betreff}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
     end
   end
+  return event_data
 end
 
-# Testaufruf für März 2024
-scrape_calendar_data('2024', '3')
+# Beispiel-URL (bitte durch eine gültige URL ersetzen)
+test_url = 'https://www.sitzungsdienst-schenefeld.de/bi/to010_r.asp?SILFDNR=4967'
+scrape_event_details(test_url)
+
 
 
 
