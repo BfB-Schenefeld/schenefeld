@@ -53,7 +53,7 @@ def scrape_vorlagen_details(vorlagen_url)
 end
 
 # Beispiel-URL für die Funktion
-vorlagen_url = 'https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=4926'
+vorlagen_url = 'https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=4918'
 scrape_vorlagen_details(vorlagen_url)
 
 
