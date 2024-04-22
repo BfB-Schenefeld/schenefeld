@@ -36,15 +36,22 @@ def scrape_vorlagen_details(vorlagen_url)
   vorlagenbezeichnung = vorlagenbezeichnung_element ? vorlagenbezeichnung_element.text.strip : "Keine Vorlagenbezeichnung gefunden"
   puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
 
-  # Extrahieren des gesamten Texts von mainContent
+  # Extrahieren und Bereinigen des gesamten Texts von mainContent
   vorlagenprotokolltext_element = document.at_css('#mainContent')
-  vorlagenprotokolltext = vorlagenprotokolltext_element ? vorlagenprotokolltext_element.inner_text.strip : "Kein Text im Hauptinhalt gefunden"
+  if vorlagenprotokolltext_element
+    vorlagenprotokolltext = vorlagenprotokolltext_element.text
+    vorlagenprotokolltext = vorlagenprotokolltext.gsub(/\s+/, ' ').strip # Ersetzt mehrfache Leerzeichen durch ein einzelnes und entfernt führende/anhängende Leerzeichen
+    vorlagenprotokolltext = vorlagenprotokolltext.gsub(/(?:\r?\n|\r)+/, ' ') # Ersetzt neue Zeilen durch ein Leerzeichen, um Text kompakter zu machen
+  else
+    vorlagenprotokolltext = "Kein Text im Hauptinhalt gefunden"
+  end
   puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
 end
 
 # Beispiel-URL für die Funktion
 vorlagen_url = 'https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=4926'
 scrape_vorlagen_details(vorlagen_url)
+
 
 
 
