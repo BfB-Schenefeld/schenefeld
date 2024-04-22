@@ -55,7 +55,7 @@ def scrape_top_details(top_url)
 end
 
 # Beispiel-URL für eine TOP-Seite
-test_top_url = 'https://www.sitzungsdienst-schenefeld.de/bi/to020_r.asp?TOLFDNR=23884'
+test_top_url = 'https://www.sitzungsdienst-schenefeld.de/bi/to020_r.asp?TOLFDNR=23716'
 scrape_top_details(test_top_url)
 
 
