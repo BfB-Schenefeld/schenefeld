@@ -27,26 +27,10 @@ require 'open-uri'
 require 'nokogiri'
 require 'csv'
 
-# Scrape Details von jeder Sitzungswebseite (Ebene 2)
-def scrape_event_details(event_url)
-  puts "Zugriff auf Sitzungsseite: #{event_url}"
-  document = Nokogiri::HTML(open(event_url))
-  
-  event_data = []
-  document.css('tr').each do |row|
-    index_number = row.css('td.tonr a').text.strip
-    betreff = row.css('td.tobetreff div a').text.strip
-    vorlage_link = row.at_css('td.tovonr a')
-    vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "Keine Vorlage"
-    vorlage_text = vorlage_link ? vorlage_link.text.strip : "Keine Vorlage"
-
-    # Daten speichern, wenn sinnvoller Inhalt vorhanden ist
-    if !index_number.empty? && !betreff.empty?
-      event_data << [index_number, betreff, vorlage_text, vorlage_url]
-      puts "Gefunden: #{index_number}, Betreff: #{betreff}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
-    end
-  end
-  return event_data
+# Funktion zum Formatieren des Datums
+def format_date(day, month, year)
+  date = Date.new(year.to_i, month.to_i, day.to_i)
+  date.strftime("%a., %d.%m.%Y") # Z.B. "Di., 05.03.2024"
 end
 
 # Scrape Kalender-Daten inklusive aller Sitzungen (Ebene 1)
@@ -54,22 +38,41 @@ def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   puts "Zugriff auf Kalenderseite: #{url}"
   document = Nokogiri::HTML(open(url))
-  event_links = document.css('a[href*="to010_r.asp?SILFDNR="]').map { |link| "https://www.sitzungsdienst-schenefeld.de/bi/#{link['href']}" }
   
   all_event_data = []
-  event_links.each do |link|
-    all_event_data += scrape_event_details(link)  # Details von jeder Sitzungsseite scrapen
+  document.css('tr:not(.emptyRow)').each do |row|
+    day = row.css('.dom').text.strip
+    formatted_date = format_date(day, month, year)
+    time = row.css('.time div').text.strip
+    sitzung_title = row.css('.textCol a').text.strip
+    sitzung_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{row.css('.textCol a')[0]['href']}"
+    raum = row.css('.raum div').text.strip
+    
+    # Daten speichern, wenn sinnvoller Inhalt vorhanden ist
+    if !sitzung_title.empty?
+      event_data = {
+        date: formatted_date,
+        time: time,
+        title: sitzung_title,
+        url: sitzung_url,
+        room: raum
+      }
+      all_event_data << event_data
+      puts "Sitzung geplant am: #{formatted_date}, um: #{time}, Titel: #{sitzung_title}, Raum: #{raum}, URL: #{sitzung_url}"
+    end
   end
+
   save_to_csv(all_event_data)
 end
 
 # Daten in CSV speichern (Daten speichern)
 def save_to_csv(data)
   CSV.open("event_details.csv", "wb") do |csv|
-    csv << ["Index Number", "Betreff", "Vorlage Text", "Vorlage URL"]
-    data.each { |row| csv << row }
+    csv << ["Datum", "Uhrzeit", "Titel", "URL", "Raum"]
+    data.each { |row| csv << [row[:date], row[:time], row[:title], row[:url], row[:room]] }
   end
 end
 
 # Start des Scrapings (Scraping starten)
 scrape_calendar_data(2024, 3)
+
