@@ -47,14 +47,15 @@ def scrape_vorlagen_details(vorlagen_url)
   puts "Vorlagen-PDF-URL: #{vorlagen_pdf_url}"
 
   # Extrahieren der Vorlagen-Sammel-PDF-URL
-  sammel_pdf_link = document.at_css('a.doclink.pdf[typ="130"]')
+  sammel_pdf_link = document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first
   sammel_pdf_url = sammel_pdf_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{sammel_pdf_link['href']}" : "Keine Vorlagen-Sammel-PDF-URL gefunden"
   puts "Vorlagen-Sammel-PDF-URL: #{sammel_pdf_url}"
 end
 
 # Beispiel-URL für die Funktion
-vorlagen_url = 'https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=4918'
+vorlagen_url = 'https://www.sitzungsdienst-schenefeld.de/bi/vo020_r.asp?VOLFDNR=4926'
 scrape_vorlagen_details(vorlagen_url)
+
 
 
 
