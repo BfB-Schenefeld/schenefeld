@@ -89,13 +89,14 @@ end
 def scrape_vorlagen_details(vorlagen_url)
   document = Nokogiri::HTML(open(vorlagen_url))
   vorlagenbezeichnung = document.at_css('#header h1.title').text.strip
-  vorlagenprotokolltext = document.at_css('#mainContent').text.gsub(/\s+/, ' ').strip
+  vorlagenprotokolltext = document.at_css('#mainContent').text.strip.gsub(/\s+/, ' ')
   puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
   puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
 end
 
-# Startpunkt
+# Start des Scraping-Prozesses
 scrape_calendar_data(2024, 3)
+
 
 
 
