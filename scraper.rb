@@ -36,8 +36,15 @@ def scrape_event_details(event_url)
     index_number = row.css('td.tonr a').text.strip rescue ''
     betreff = row.css('td.tobetreff div a').text.strip rescue row.css('td.tobetreff div').text.strip
     vorlage_link = row.at_css('td.tovonr a')
-    vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "Keine Vorlage"
-    vorlage_text = vorlage_link ? vorlage_link.text.strip : "Keine Vorlage"
+
+    # Überprüfen, ob eine Vorlage vorhanden ist und entsprechend formatieren
+    if vorlage_link
+      vorlage_text = vorlage_link.text.strip
+      vorlage_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}"
+    else
+      vorlage_text = "-"
+      vorlage_url = "-"
+    end
 
     if !index_number.empty? && !betreff.empty?
       event_data << [index_number, betreff, vorlage_text, vorlage_url]
@@ -50,6 +57,7 @@ end
 # Beispiel-URL (bitte durch eine gültige URL ersetzen)
 test_url = 'https://www.sitzungsdienst-schenefeld.de/bi/to010_r.asp?SILFDNR=4967'
 scrape_event_details(test_url)
+
 
 
 
