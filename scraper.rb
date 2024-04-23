@@ -99,28 +99,40 @@ def scrape_top_details(top_url)
   puts "TOP-Protokolltext: #{top_protokolltext}"
 
   vorlagen_betreff_element = document.at_css('span#vobetreff a')
-  vorlagen_url = vorlagen_betreff_element ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}" : nil
-  puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_element.text.strip if vorlagen_betreff_element}, Vorlagen-URL: #{vorlagen_url}"
-  scrape_vorlagen_details(vorlagen_url) if vorlagen_url
+  if vorlagen_betreff_element
+    vorlagen_betreff = vorlagen_betreff_element.text.strip
+    vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
+    puts "Vorlagen-Betreff: #{vorlagen_betreff}, Vorlagen-URL: #{vorlagen_url}"
+    scrape_vorlagen_details(vorlagen_url)
+  else
+    puts "Keine Vorlage vorhanden."
+  end
 end
 
 def scrape_vorlagen_details(vorlagen_url)
-  return unless vorlagen_url
   puts "Zugriff auf Vorlagenseite: #{vorlagen_url}"
   document = Nokogiri::HTML(open(vorlagen_url))
 
-  vorlagenbezeichnung = document.at_css('#header h1.title').text.strip rescue "Keine Vorlagenbezeichnung gefunden"
-  vorlagenprotokolltext = document.at_css('#mainContent').text.gsub(/\s+/, ' ').strip rescue "Kein Vorlagenprotokolltext gefunden"
+  vorlagenbezeichnung_element = document.at_css('#header h1.title')
+  vorlagenbezeichnung = vorlagenbezeichnung_element ? vorlagenbezeichnung_element.text.strip : "Keine Vorlagenbezeichnung gefunden"
   puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
+
+  vorlagenprotokolltext_element = document.at_css('#mainContent')
+  vorlagenprotokolltext = vorlagenprotokolltext_element ? vorlagenprotokolltext_element.text.gsub(/\s+/, ' ').strip : "Kein Text im Hauptinhalt gefunden"
   puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
 
-  vorlagen_pdf_url = document.at_css('a.doclink.pdf')['href'] rescue nil
-  vorlagen_pdf_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_pdf_url}" if vorlagen_pdf_url
+  vorlagen_pdf_link = document.at_css('a.doclink.pdf')
+  vorlagen_pdf_url = vorlagen_pdf_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_pdf_link['href']}" : "Keine Vorlagen-PDF-URL gefunden"
   puts "Vorlagen-PDF-URL: #{vorlagen_pdf_url}"
+
+  sammel_pdf_link = document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first
+  sammel_pdf_url = sammel_pdf_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{sammel_pdf_link['href']}" : "Keine Vorlagen-Sammel-PDF-URL gefunden"
+  puts "Vorlagen-Sammel-PDF-URL: #{sammel_pdf_url}"
 end
 
-# Startpunkt
+# Start the scraping process for a given month and year
 scrape_calendar_data('2024', '3')
+
 
 
 
