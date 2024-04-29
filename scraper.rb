@@ -49,17 +49,25 @@ end
 def scrape_top_details(top_url)
   puts "Zugriff auf TOP-Seite: #{top_url}"
   document = Nokogiri::HTML(open(top_url))
+  
+  # Extraktion des TOP-Protokolltextes ohne doppelte Überschriften
+  main_content_elements = document.css('#mainContent div.expandedDiv, #mainContent div.expandedTitle')
+  top_protokolltext = main_content_elements.map { |element| element.text.strip }.join(" ").gsub(/\s+/, ' ')
+  puts "TOP-Protokolltext: #{top_protokolltext}"
 
-  # ... (keep the existing method implementation)
-
-  # Extract Vorlagen details if available
+  # Extraktion der Vorlagen-Betreffs, wenn vorhanden
+  vorlagen_betreff_element = document.at_css('span#vobetreff a')
   vorlagen_data = nil
   if vorlagen_betreff_element
+    vorlagen_betreff_text = vorlagen_betreff_element.text.strip
     vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
+    puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_text}, Vorlagen-URL: #{vorlagen_url}"
     vorlagen_data = scrape_vorlagen_details(vorlagen_url)
+  else
+    puts "Keine Vorlage vorhanden."
   end
 
-  # Return the extracted data as a hash
+  # Rückgabe des TOP-Protokolltextes und weiterer Details
   {
     top_protokolltext: top_protokolltext,
     vorlagen_data: vorlagen_data
