@@ -35,7 +35,25 @@ def scrape_vorlagen_details(vorlagen_url)
   puts "Zugriff auf Vorlagenseite: #{vorlagen_url}"
   document = Nokogiri::HTML(open(vorlagen_url))
 
-  # ... (keep the existing method implementation)
+  # Extrahieren der Vorlagenbezeichnung
+  vorlagenbezeichnung_element = document.at_css('#header h1.title')
+  vorlagenbezeichnung = vorlagenbezeichnung_element ? vorlagenbezeichnung_element.text.strip : "Keine Vorlagenbezeichnung gefunden"
+  puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
+
+  # Extrahieren des gesamten Texts von mainContent
+  vorlagenprotokolltext_element = document.at_css('#mainContent')
+  vorlagenprotokolltext = vorlagenprotokolltext_element ? vorlagenprotokolltext_element.text.gsub(/\s+/, ' ').strip : "Kein Text im Hauptinhalt gefunden"
+  puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
+
+  # Extrahieren der Vorlagen-PDF-URL
+  vorlagen_pdf_link = document.at_css('a.doclink.pdf')
+  vorlagen_pdf_url = vorlagen_pdf_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_pdf_link['href']}" : "Keine Vorlagen-PDF-URL gefunden"
+  puts "Vorlagen-PDF-URL: #{vorlagen_pdf_url}"
+
+  # Extrahieren der Vorlagen-Sammel-PDF-URL
+  sammel_pdf_link = document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first
+  sammel_pdf_url = sammel_pdf_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{sammel_pdf_link['href']}" : "Keine Vorlagen-Sammel-PDF-URL gefunden"
+  puts "Vorlagen-Sammel-PDF-URL: #{sammel_pdf_url}"
 
   # Return the extracted data as a hash
   {
