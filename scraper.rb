@@ -23,75 +23,6 @@
 # All that matters is that your final data is written to an SQLite database
 # called "data.sqlite" in the current working directory which has at least a table
 # called "data".
-require 'open-uri'
-require 'nokogiri'
-require 'date'
-
-def extract_and_format_date(dow, dom, month, year)
-  # ... (keep the existing method implementation)
-end
-
-def scrape_vorlagen_details(vorlagen_url)
-  puts "Zugriff auf Vorlagenseite: #{vorlagen_url}"
-  document = Nokogiri::HTML(open(vorlagen_url))
-
-  # ... (keep the existing method implementation)
-
-  # Return the extracted data as a hash
-  {
-    vorlagenbezeichnung: vorlagenbezeichnung,
-    vorlagenprotokolltext: vorlagenprotokolltext,
-    vorlagen_pdf_url: vorlagen_pdf_url,
-    sammel_pdf_url: sammel_pdf_url
-  }
-end
-
-def scrape_top_details(top_url)
-  puts "Zugriff auf TOP-Seite: #{top_url}"
-  document = Nokogiri::HTML(open(top_url))
-
-  # ... (keep the existing method implementation)
-
-  # Extract Vorlagen details if available
-  vorlagen_data = nil
-  if vorlagen_betreff_element
-    vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
-    vorlagen_data = scrape_vorlagen_details(vorlagen_url)
-  end
-
-  # Return the extracted data as a hash
-  {
-    top_protokolltext: top_protokolltext,
-    vorlagen_data: vorlagen_data
-  }
-end
-
-def scrape_event_details(event_url)
-  puts "Zugriff auf Sitzungsseite: #{event_url}"
-  document = Nokogiri::HTML(open(event_url))
-
-  event_data = []
-  document.css('tr').each do |row|
-    # ... (keep the existing data extraction logic)
-
-    if !index_number.empty? && !betreff.empty?
-      # Scrape TOP details
-      top_data = scrape_top_details(top_url)
-
-      event_data << {
-        index_number: index_number,
-        betreff: betreff,
-        top_url: top_url,
-        vorlage_text: vorlage_text,
-        vorlage_url: vorlage_url,
-        top_data: top_data
-      }
-      puts "Gefunden: #{index_number}, Betreff: #{betreff}, TOP-URL: #{top_url}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
-    end
-  end
-  event_data
-end
-
 def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   puts "Zugriff auf Kalenderseite: #{url}"
@@ -99,10 +30,20 @@ def scrape_calendar_data(year, month)
 
   calendar_data = []
   document.css('tr:not(.emptyRow)').each do |row|
-    # ... (keep the existing data extraction logic)
+    dow_element = row.at_css('.dow')
+    dom_element = row.at_css('.dom')
+    time_element = row.at_css('.time div')
+    title_element = row.at_css('.textCol a')
+    room_element = row.at_css('.raum div')
 
     if dow_element && dom_element && time_element && title_element && room_element
-      # ... (keep the existing data extraction and formatting logic)
+      dow = dow_element.text
+      dom = dom_element.text
+      time = time_element.text
+      title = title_element.text
+      url = "https://www.sitzungsdienst-schenefeld.de/bi/#{title_element['href']}"
+      room = room_element.text
+      formatted_date = extract_and_format_date(dow, dom, month, year)
 
       # Scrape event details
       event_data = scrape_event_details(url)
@@ -120,11 +61,3 @@ def scrape_calendar_data(year, month)
   end
   calendar_data
 end
-
-# Example usage
-year = '2024'
-month = '3'
-calendar_data = scrape_calendar_data(year, month)
-
-# Print the scraped data
-puts calendar_data
