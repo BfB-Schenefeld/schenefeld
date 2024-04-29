@@ -27,6 +27,7 @@ require 'open-uri'
 require 'nokogiri'
 require 'date'
 require 'scraperwiki'
+require 'json'
 
 def valid_url?(url)
   url =~ /\A#{URI::regexp(['http', 'https'])}\z/
@@ -207,20 +208,18 @@ def scrape_calendar_data(year, month)
           event_data = scrape_event_details(url)
 
           event = {
-            date: formatted_date,
-            time: time,
-            title: title,
-            url: url,
-            room: room,
-            event_data: event_data
+            'date' => formatted_date,
+            'time' => time,
+            'title' => title,
+            'url' => url,
+            'room' => room,
+            'event_data' => event_data.to_json
           }
           calendar_data << event
           puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{url}, Raum: #{room}"
-        end
-      end
 
-      calendar_data.each do |event|
-        ScraperWiki.save_sqlite([:date, :title], event)
+          ScraperWiki.save_sqlite(['date', 'title'], event)
+        end
       end
 
       calendar_data
