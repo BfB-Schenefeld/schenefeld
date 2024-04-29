@@ -72,7 +72,18 @@ def scrape_event_details(event_url)
 
   event_data = []
   document.css('tr').each do |row|
-    # ... (keep the existing data extraction logic)
+    index_number_element = row.at_css('td.tonr a')
+    index_number = index_number_element ? index_number_element.text.strip : ''
+
+    betreff_element = row.at_css('td.tobetreff div a') || row.at_css('td.tobetreff div')
+    betreff = betreff_element ? betreff_element.text.strip : ''
+
+    top_link = row.at_css('td.tobetreff div a')
+    top_url = top_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{top_link['href']}" : "-"
+
+    vorlage_link = row.at_css('td.tovonr a')
+    vorlage_text = vorlage_link ? vorlage_link.text.strip : "-"
+    vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "-"
 
     if !index_number.empty? && !betreff.empty?
       # Scrape TOP details
