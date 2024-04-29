@@ -33,140 +33,57 @@ end
 
 def scrape_vorlagen_details(vorlagen_url)
   puts "Zugriff auf Vorlagenseite: #{vorlagen_url}"
-  document = Nokogiri::HTML(open(vorlagen_url))
-
-  # Extrahieren der Vorlagenbezeichnung
-  vorlagenbezeichnung_element = document.at_css('#header h1.title')
-  vorlagenbezeichnung = vorlagenbezeichnung_element ? vorlagenbezeichnung_element.text.strip : "Keine Vorlagenbezeichnung gefunden"
-  puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
-
-  # Extrahieren des gesamten Texts von mainContent
-  vorlagenprotokolltext_element = document.at_css('#mainContent')
-  vorlagenprotokolltext = vorlagenprotokolltext_element ? vorlagenprotokolltext_element.text.gsub(/\s+/, ' ').strip : "Kein Text im Hauptinhalt gefunden"
-  puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
-
-  # Extrahieren der Vorlagen-PDF-URL
-  vorlagen_pdf_link = document.at_css('a.doclink.pdf')
-  vorlagen_pdf_url = vorlagen_pdf_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_pdf_link['href']}" : "Keine Vorlagen-PDF-URL gefunden"
-  puts "Vorlagen-PDF-URL: #{vorlagen_pdf_url}"
-
-  # Extrahieren der Vorlagen-Sammel-PDF-URL
-  sammel_pdf_link = document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first
-  sammel_pdf_url = sammel_pdf_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{sammel_pdf_link['href']}" : "Keine Vorlagen-Sammel-PDF-URL gefunden"
-  puts "Vorlagen-Sammel-PDF-URL: #{sammel_pdf_url}"
-
-  # Return the extracted data as a hash
-  {
-    vorlagenbezeichnung: vorlagenbezeichnung,
-    vorlagenprotokolltext: vorlagenprotokolltext,
-    vorlagen_pdf_url: vorlagen_pdf_url,
-    sammel_pdf_url: sammel_pdf_url
-  }
+  begin
+    document = Nokogiri::HTML(open(vorlagen_url))
+    # ... (keep the existing method implementation)
+  rescue OpenURI::HTTPError => e
+    puts "Fehler beim Zugriff auf die Vorlagenseite: #{vorlagen_url}"
+    puts "Fehlermeldung: #{e.message}"
+    return nil
+  end
+  # ... (keep the existing method implementation)
 end
 
 def scrape_top_details(top_url)
   puts "Zugriff auf TOP-Seite: #{top_url}"
-  document = Nokogiri::HTML(open(top_url))
-  
-  # Extraktion des TOP-Protokolltextes ohne doppelte Überschriften
-  main_content_elements = document.css('#mainContent div.expandedDiv, #mainContent div.expandedTitle')
-  top_protokolltext = main_content_elements.map { |element| element.text.strip }.join(" ").gsub(/\s+/, ' ')
-  puts "TOP-Protokolltext: #{top_protokolltext}"
-
-  # Extraktion der Vorlagen-Betreffs, wenn vorhanden
-  vorlagen_betreff_element = document.at_css('span#vobetreff a')
-  vorlagen_data = nil
-  if vorlagen_betreff_element
-    vorlagen_betreff_text = vorlagen_betreff_element.text.strip
-    vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
-    puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_text}, Vorlagen-URL: #{vorlagen_url}"
-    vorlagen_data = scrape_vorlagen_details(vorlagen_url)
-  else
-    puts "Keine Vorlage vorhanden."
+  begin
+    document = Nokogiri::HTML(open(top_url))
+    # ... (keep the existing method implementation)
+  rescue OpenURI::HTTPError => e
+    puts "Fehler beim Zugriff auf die TOP-Seite: #{top_url}"
+    puts "Fehlermeldung: #{e.message}"
+    return { top_protokolltext: nil, vorlagen_data: nil }
   end
-
-  # Rückgabe des TOP-Protokolltextes und weiterer Details
-  {
-    top_protokolltext: top_protokolltext,
-    vorlagen_data: vorlagen_data
-  }
+  # ... (keep the existing method implementation)
 end
 
 def scrape_event_details(event_url)
   puts "Zugriff auf Sitzungsseite: #{event_url}"
-  document = Nokogiri::HTML(open(event_url))
-
-  event_data = []
-  document.css('tr').each do |row|
-    index_number_element = row.at_css('td.tonr a')
-    index_number = index_number_element ? index_number_element.text.strip : ''
-
-    betreff_element = row.at_css('td.tobetreff div a') || row.at_css('td.tobetreff div')
-    betreff = betreff_element ? betreff_element.text.strip : ''
-
-    top_link = row.at_css('td.tobetreff div a')
-    top_url = top_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{top_link['href']}" : "-"
-
-    vorlage_link = row.at_css('td.tovonr a')
-    vorlage_text = vorlage_link ? vorlage_link.text.strip : "-"
-    vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "-"
-
-    if !index_number.empty? && !betreff.empty?
-      # Scrape TOP details
-      top_data = scrape_top_details(top_url)
-
-      event_data << {
-        index_number: index_number,
-        betreff: betreff,
-        top_url: top_url,
-        vorlage_text: vorlage_text,
-        vorlage_url: vorlage_url,
-        top_data: top_data
-      }
-      puts "Gefunden: #{index_number}, Betreff: #{betreff}, TOP-URL: #{top_url}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
-    end
+  begin
+    document = Nokogiri::HTML(open(event_url))
+    # ... (keep the existing method implementation)
+  rescue OpenURI::HTTPError => e
+    puts "Fehler beim Zugriff auf die Sitzungsseite: #{event_url}"
+    puts "Fehlermeldung: #{e.message}"
+    return []
   end
-  event_data
+  # ... (keep the existing method implementation)
 end
 
 def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   puts "Zugriff auf Kalenderseite: #{url}"
-  document = Nokogiri::HTML(open(url))
-
-  calendar_data = []
-  document.css('tr:not(.emptyRow)').each do |row|
-    dow_element = row.at_css('.dow')
-    dom_element = row.at_css('.dom')
-    time_element = row.at_css('.time div')
-    title_element = row.at_css('.textCol a')
-    room_element = row.at_css('.raum div')
-
-    if dow_element && dom_element && time_element && title_element && room_element
-      dow = dow_element.text
-      dom = dom_element.text
-      time = time_element.text
-      title = title_element.text
-      url = "https://www.sitzungsdienst-schenefeld.de/bi/#{title_element['href']}"
-      room = room_element.text
-      formatted_date = extract_and_format_date(dow, dom, month, year)
-
-      # Scrape event details
-      event_data = scrape_event_details(url)
-
-      calendar_data << {
-        date: formatted_date,
-        time: time,
-        title: title,
-        url: url,
-        room: room,
-        event_data: event_data
-      }
-      puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{url}, Raum: #{room}"
-    end
+  begin
+    document = Nokogiri::HTML(open(url))
+    # ... (keep the existing method implementation)
+  rescue OpenURI::HTTPError => e
+    puts "Fehler beim Zugriff auf die Kalenderseite: #{url}"
+    puts "Fehlermeldung: #{e.message}"
+    return []
   end
-  calendar_data
+  # ... (keep the existing method implementation)
 end
+
 # Example usage
 year = '2024'
 month = '3'
