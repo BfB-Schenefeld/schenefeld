@@ -223,7 +223,7 @@ def scrape_calendar_data(year, month)
 
                 vorlagen_detail = {
                   'top_detail_id' => top_detail_id,
-                  'vorlage_id' => vorlagen_data['vorlagenbezeichnung'],
+                  'vorlage_id' => event_detail['vorlage_text'],
                   'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'],
                   'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'],
                   'sammel_pdf_url' => vorlagen_data['sammel_pdf_url']
