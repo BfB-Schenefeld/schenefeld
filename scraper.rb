@@ -69,42 +69,6 @@ def scrape_vorlagen_details(vorlagen_url)
   end
 end
 
-def scrape_top_details(top_url)
-  puts "Zugriff auf TOP-Seite: #{top_url}"
-  begin
-    if valid_url?(top_url)
-      document = Nokogiri::HTML(open(top_url))
-  
-      main_content_elements = document.css('#mainContent div.expandedDiv, #mainContent div.expandedTitle')
-      top_protokolltext = main_content_elements.map { |element| element.text.strip }.join(" ").gsub(/\s+/, ' ')
-      puts "TOP-Protokolltext: #{top_protokolltext}"
-
-      vorlagen_betreff_element = document.at_css('span#vobetreff a')
-      vorlagen_data = nil
-      if vorlagen_betreff_element
-        vorlagen_betreff_text = vorlagen_betreff_element.text.strip
-        vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
-        puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_text}, Vorlagen-URL: #{vorlagen_url}"
-        vorlagen_data = scrape_vorlagen_details(vorlagen_url)
-      else
-        puts "Keine Vorlage vorhanden."
-      end
-
-      {
-        'top_protokolltext' => top_protokolltext,
-        'vorlagen_data' => vorlagen_data
-      }
-    else
-      puts "Ungültige TOP-URL: #{top_url}"
-      return { 'top_protokolltext' => nil, 'vorlagen_data' => nil }
-    end
-  rescue OpenURI::HTTPError => e
-    puts "Fehler beim Zugriff auf die TOP-Seite: #{top_url}"
-    puts "Fehlermeldung: #{e.message}"
-    return { 'top_protokolltext' => nil, 'vorlagen_data' => nil }
-  end
-end
-
 def scrape_event_details(event_url)
   puts "Zugriff auf Sitzungsseite: #{event_url}"
   begin
