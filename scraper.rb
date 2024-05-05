@@ -172,10 +172,20 @@ def scrape_calendar_data(year, month)
 
       calendar_data = []
       document.css('tr:not(.emptyRow)').each do |row|
-        # ... (keep the existing data extraction logic)
+        dow_element = row.at_css('.dow')
+        dom_element = row.at_css('.dom')
+        time_element = row.at_css('.time div')
+        title_element = row.at_css('.textCol a')
+        room_element = row.at_css('.raum div')
 
         if dow_element && dom_element && time_element && title_element && room_element
-          # ... (keep the existing data extraction and formatting logic)
+          dow = dow_element.text
+          dom = dom_element.text
+          time = time_element.text
+          title = title_element.text
+          url = "https://www.sitzungsdienst-schenefeld.de/bi/#{title_element['href']}"
+          room = room_element.text
+          formatted_date = extract_and_format_date(dow, dom, month, year)
 
           calendar_event = {
             'date' => formatted_date,
