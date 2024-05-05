@@ -152,6 +152,14 @@ def scrape_event_details(event_url)
   end
 end
 
+def drop_tables
+  ScraperWiki.sqliteexecute("DROP TABLE IF EXISTS data")
+  ScraperWiki.sqliteexecute("DROP TABLE IF EXISTS calendar_events")
+  ScraperWiki.sqliteexecute("DROP TABLE IF EXISTS event_details")
+  ScraperWiki.sqliteexecute("DROP TABLE IF EXISTS top_details")
+  ScraperWiki.sqliteexecute("DROP TABLE IF EXISTS vorlagen_details")
+end
+
 def create_tables
   ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS calendar_events (id INTEGER PRIMARY KEY, date TEXT, time TEXT, title TEXT, url TEXT, room TEXT)")
   ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS event_details (id INTEGER PRIMARY KEY, calendar_event_id INTEGER, index_number TEXT, betreff TEXT, top_url TEXT, vorlage_id TEXT, vorlage_url TEXT, FOREIGN KEY (calendar_event_id) REFERENCES calendar_events(id))")
@@ -195,7 +203,7 @@ def scrape_calendar_data(year, month)
           event_data = scrape_event_details(url)
           event_data.each do |event_detail|
             event_detail['calendar_event_id'] = calendar_event_id
-            event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_id, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [event_detail['calendar_event_id'], event_detail['index_number'], event_detail['betreff'], event_detail['top_url'], event_detail['vorlage_id'], event_detail['vorlage_url']]).last
+            event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_id, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [event_detail['calendar_event_id'], event_detail['index_number'], event_detail['betreff'], event_detail['top_url'], event_detail['vorlage_text'], event_detail['vorlage_url']]).last
 
             top_data = event_detail['top_data']
             if top_data
@@ -244,7 +252,10 @@ def scrape_calendar_data(year, month)
   end
 end
 
-# Create the necessary tables
+# Drop existing tables
+drop_tables
+
+# Create new tables with the desired column names
 create_tables
 
 # Example usage
