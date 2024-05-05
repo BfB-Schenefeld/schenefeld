@@ -156,6 +156,13 @@ def scrape_event_details(event_url)
   end
 end
 
+def create_tables
+  ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS calendar_events (id INTEGER PRIMARY KEY, date TEXT, time TEXT, title TEXT, url TEXT, room TEXT)")
+  ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS event_details (id INTEGER PRIMARY KEY, calendar_event_id INTEGER, index_number TEXT, betreff TEXT, top_url TEXT, vorlage_text TEXT, vorlage_url TEXT, FOREIGN KEY (calendar_event_id) REFERENCES calendar_events(id))")
+  ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS top_details (id INTEGER PRIMARY KEY, event_detail_id INTEGER, top_protokolltext TEXT, FOREIGN KEY (event_detail_id) REFERENCES event_details(id))")
+  ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS vorlagen_details (id INTEGER PRIMARY KEY, top_detail_id INTEGER, vorlagenbezeichnung TEXT, vorlagenprotokolltext TEXT, vorlagen_pdf_url TEXT, sammel_pdf_url TEXT, FOREIGN KEY (top_detail_id) REFERENCES top_details(id))")
+end
+
 def scrape_calendar_data(year, month)
   url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
   puts "Zugriff auf Kalenderseite: #{url}"
@@ -180,20 +187,42 @@ def scrape_calendar_data(year, month)
           room = room_element.text
           formatted_date = extract_and_format_date(dow, dom, month, year)
 
-          event_data = scrape_event_details(url)
-
-          event = {
+          calendar_event = {
             'date' => formatted_date,
             'time' => time,
             'title' => title,
             'url' => url,
-            'room' => room,
-            'event_data' => event_data.to_json
+            'room' => room
           }
-          calendar_data << event
-          puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{url}, Raum: #{room}"
+          calendar_event_id = ScraperWiki.sqliteexecute("INSERT INTO calendar_events (date, time, title, url, room) VALUES (?, ?, ?, ?, ?)", calendar_event.values_at('date', 'time', 'title', 'url', 'room'))
 
-          ScraperWiki.save_sqlite(['date', 'title'], event)
+          event_data = scrape_event_details(url)
+          event_data.each do |event_detail|
+            event_detail['calendar_event_id'] = calendar_event_id.last
+            event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_text, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", event_detail.values_at('calendar_event_id', 'index_number', 'betreff', 'top_url', 'vorlage_text', 'vorlage_url'))
+
+            top_data = event_detail['top_data']
+            top_detail = {
+              'event_detail_id' => event_detail_id.last,
+              'top_protokolltext' => top_data['top_protokolltext']
+            }
+            top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", top_detail.values_at('event_detail_id', 'top_protokolltext'))
+
+            vorlagen_data = top_data['vorlagen_data']
+            if vorlagen_data
+              vorlagen_detail = {
+                'top_detail_id' => top_detail_id.last,
+                'vorlagenbezeichnung' => vorlagen_data['vorlagenbezeichnung'],
+                'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'],
+                'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'],
+                'sammel_pdf_url' => vorlagen_data['sammel_pdf_url']
+              }
+              ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlagenbezeichnung, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", vorlagen_detail.values_at('top_detail_id', 'vorlagenbezeichnung', 'vorlagenprotokolltext', 'vorlagen_pdf_url', 'sammel_pdf_url'))
+            end
+          end
+
+          calendar_data << calendar_event
+          puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{url}, Raum: #{room}"
         end
       end
 
@@ -209,10 +238,13 @@ def scrape_calendar_data(year, month)
   end
 end
 
+# Create the necessary tables
+create_tables
+
 # Example usage
 year = '2024'
 month = '3'
 calendar_data = scrape_calendar_data(year, month)
 
-# Print the scraped data
+# Print the scraped data for debugging
 puts calendar_data
