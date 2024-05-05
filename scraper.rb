@@ -40,27 +40,23 @@ def scrape_vorlagen_details(vorlagen_url)
     if valid_url?(vorlagen_url)
       document = Nokogiri::HTML(open(vorlagen_url))
 
-      vorlagenbezeichnung_element = document.at_css('#header h1.title')
-      vorlagenbezeichnung = vorlagenbezeichnung_element ? vorlagenbezeichnung_element.text.strip : "Keine Vorlagenbezeichnung gefunden"
+      vorlagenbezeichnung = document.at_css('#header h1.title') ? document.at_css('#header h1.title').text.strip : ''
       puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
 
-      vorlagenprotokolltext_element = document.at_css('#mainContent')
-      vorlagenprotokolltext = vorlagenprotokolltext_element ? vorlagenprotokolltext_element.text.gsub(/\s+/, ' ').strip : "Kein Text im Hauptinhalt gefunden"
+      vorlagenprotokolltext = document.at_css('#mainContent') ? document.at_css('#mainContent').text.gsub(/\s+/, ' ').strip : ''
       puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
 
-      vorlagen_pdf_link = document.at_css('a.doclink.pdf')
-      vorlagen_pdf_url = vorlagen_pdf_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_pdf_link['href']}" : "Keine Vorlagen-PDF-URL gefunden"
+      vorlagen_pdf_url = document.at_css('a.doclink.pdf') ? "https://www.sitzungsdienst-schenefeld.de/bi/#{document.at_css('a.doclink.pdf')['href']}" : ''
       puts "Vorlagen-PDF-URL: #{vorlagen_pdf_url}"
 
-      sammel_pdf_link = document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first
-      sammel_pdf_url = sammel_pdf_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{sammel_pdf_link['href']}" : "Keine Vorlagen-Sammel-PDF-URL gefunden"
+      sammel_pdf_url = document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first ? "https://www.sitzungsdienst-schenefeld.de/bi/#{document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first['href']}" : ''
       puts "Vorlagen-Sammel-PDF-URL: #{sammel_pdf_url}"
 
       {
-        vorlagenbezeichnung: vorlagenbezeichnung,
-        vorlagenprotokolltext: vorlagenprotokolltext,
-        vorlagen_pdf_url: vorlagen_pdf_url,
-        sammel_pdf_url: sammel_pdf_url
+        'vorlagenbezeichnung' => vorlagenbezeichnung,
+        'vorlagenprotokolltext' => vorlagenprotokolltext,
+        'vorlagen_pdf_url' => vorlagen_pdf_url,
+        'sammel_pdf_url' => sammel_pdf_url
       }
     else
       puts "Ungültige Vorlagen-URL: #{vorlagen_url}"
@@ -211,6 +207,12 @@ def scrape_calendar_data(year, month)
 
               vorlagen_data = top_data['vorlagen_data']
               if vorlagen_data
+                puts "Vorlagen-Daten gefunden:"
+                puts "Vorlagenbezeichnung: #{vorlagen_data['vorlagenbezeichnung']}"
+                puts "Vorlagenprotokolltext: #{vorlagen_data['vorlagenprotokolltext']}"
+                puts "Vorlagen-PDF-URL: #{vorlagen_data['vorlagen_pdf_url']}"
+                puts "Vorlagen-Sammel-PDF-URL: #{vorlagen_data['sammel_pdf_url']}"
+
                 vorlagen_detail = {
                   'top_detail_id' => top_detail_id,
                   'vorlagenbezeichnung' => vorlagen_data['vorlagenbezeichnung'],
@@ -219,6 +221,8 @@ def scrape_calendar_data(year, month)
                   'sammel_pdf_url' => vorlagen_data['sammel_pdf_url']
                 }
                 ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlagenbezeichnung, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", vorlagen_detail.values_at('top_detail_id', 'vorlagenbezeichnung', 'vorlagenprotokolltext', 'vorlagen_pdf_url', 'sammel_pdf_url'))
+              else
+                puts "Keine Vorlagen-Daten gefunden."
               end
             end
           end
