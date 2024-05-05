@@ -124,22 +124,22 @@ def scrape_event_details(event_url)
         betreff = betreff_element ? betreff_element.text.strip : ''
 
         top_link = row.at_css('td.tobetreff div a')
-        top_url = top_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{top_link['href']}" : "-"
+        top_url = top_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{top_link['href']}" : ""
 
         vorlage_link = row.at_css('td.tovonr a')
-        vorlage_text = vorlage_link ? vorlage_link.text.strip : "-"
-        vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : "-"
+        vorlage_text = vorlage_link ? vorlage_link.text.strip : ""
+        vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : ""
 
         if !index_number.empty? && !betreff.empty?
           top_data = scrape_top_details(top_url)
 
           event_data << {
-            index_number: index_number,
-            betreff: betreff,
-            top_url: top_url,
-            vorlage_text: vorlage_text,
-            vorlage_url: vorlage_url,
-            top_data: top_data
+            'index_number' => index_number,
+            'betreff' => betreff,
+            'top_url' => top_url,
+            'vorlage_text' => vorlage_text,
+            'vorlage_url' => vorlage_url,
+            'top_data' => top_data
           }
           puts "Gefunden: #{index_number}, Betreff: #{betreff}, TOP-URL: #{top_url}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
         end
@@ -194,25 +194,25 @@ def scrape_calendar_data(year, month)
             'url' => url,
             'room' => room
           }
-          calendar_event_id = ScraperWiki.sqliteexecute("INSERT INTO calendar_events (date, time, title, url, room) VALUES (?, ?, ?, ?, ?)", calendar_event.values_at('date', 'time', 'title', 'url', 'room'))
+          calendar_event_id = ScraperWiki.sqliteexecute("INSERT INTO calendar_events (date, time, title, url, room) VALUES (?, ?, ?, ?, ?)", calendar_event.values_at('date', 'time', 'title', 'url', 'room')).last
 
           event_data = scrape_event_details(url)
           event_data.each do |event_detail|
-            event_detail['calendar_event_id'] = calendar_event_id.last
-            event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_text, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", event_detail.values_at('calendar_event_id', 'index_number', 'betreff', 'top_url', 'vorlage_text', 'vorlage_url'))
+            event_detail['calendar_event_id'] = calendar_event_id
+            event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_text, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [event_detail['calendar_event_id'], event_detail['index_number'], event_detail['betreff'], event_detail['top_url'], event_detail['vorlage_text'], event_detail['vorlage_url']]).last
 
             top_data = event_detail['top_data']
             if top_data
               top_detail = {
-                'event_detail_id' => event_detail_id.last,
+                'event_detail_id' => event_detail_id,
                 'top_protokolltext' => top_data['top_protokolltext']
               }
-              top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [top_detail['event_detail_id'], top_detail['top_protokolltext']])
+              top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [top_detail['event_detail_id'], top_detail['top_protokolltext']]).last
 
               vorlagen_data = top_data['vorlagen_data']
               if vorlagen_data
                 vorlagen_detail = {
-                  'top_detail_id' => top_detail_id.last,
+                  'top_detail_id' => top_detail_id,
                   'vorlagenbezeichnung' => vorlagen_data['vorlagenbezeichnung'] || '',
                   'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'] || '',
                   'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'] || '',
