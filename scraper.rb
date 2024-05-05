@@ -40,7 +40,7 @@ def scrape_vorlagen_details(vorlagen_url)
     if valid_url?(vorlagen_url)
       document = Nokogiri::HTML(open(vorlagen_url))
 
-      vorlagenbezeichnung = document.at_css('#header h1.title') ? document.at_css('#header h1.title').text.strip : ''
+      vorlagenbezeichnung = document.at_css('span#vobetreff a') ? document.at_css('span#vobetreff a').text.strip : ''
       puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
 
       vorlagenprotokolltext = document.at_css('#mainContent') ? document.at_css('#mainContent').text.gsub(/\s+/, ' ').strip : ''
@@ -154,9 +154,9 @@ end
 
 def create_tables
   ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS calendar_events (id INTEGER PRIMARY KEY, date TEXT, time TEXT, title TEXT, url TEXT, room TEXT)")
-  ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS event_details (id INTEGER PRIMARY KEY, calendar_event_id INTEGER, index_number TEXT, betreff TEXT, top_url TEXT, vorlage_text TEXT, vorlage_url TEXT, FOREIGN KEY (calendar_event_id) REFERENCES calendar_events(id))")
+  ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS event_details (id INTEGER PRIMARY KEY, calendar_event_id INTEGER, index_number TEXT, betreff TEXT, top_url TEXT, vorlage_id TEXT, vorlage_url TEXT, FOREIGN KEY (calendar_event_id) REFERENCES calendar_events(id))")
   ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS top_details (id INTEGER PRIMARY KEY, event_detail_id INTEGER, top_protokolltext TEXT, FOREIGN KEY (event_detail_id) REFERENCES event_details(id))")
-  ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS vorlagen_details (id INTEGER PRIMARY KEY, top_detail_id INTEGER, vorlagenbezeichnung TEXT, vorlagenprotokolltext TEXT, vorlagen_pdf_url TEXT, sammel_pdf_url TEXT, FOREIGN KEY (top_detail_id) REFERENCES top_details(id))")
+  ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS vorlagen_details (id INTEGER PRIMARY KEY, top_detail_id INTEGER, vorlage_id TEXT, vorlagenprotokolltext TEXT, vorlagen_pdf_url TEXT, sammel_pdf_url TEXT, FOREIGN KEY (top_detail_id) REFERENCES top_details(id))")
 end
 
 def scrape_calendar_data(year, month)
@@ -195,7 +195,7 @@ def scrape_calendar_data(year, month)
           event_data = scrape_event_details(url)
           event_data.each do |event_detail|
             event_detail['calendar_event_id'] = calendar_event_id
-            event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_text, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [event_detail['calendar_event_id'], event_detail['index_number'], event_detail['betreff'], event_detail['top_url'], event_detail['vorlage_text'], event_detail['vorlage_url']]).last
+            event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_id, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [event_detail['calendar_event_id'], event_detail['index_number'], event_detail['betreff'], event_detail['top_url'], event_detail['vorlage_id'], event_detail['vorlage_url']]).last
 
             top_data = event_detail['top_data']
             if top_data
@@ -215,12 +215,12 @@ def scrape_calendar_data(year, month)
 
                 vorlagen_detail = {
                   'top_detail_id' => top_detail_id,
-                  'vorlagenbezeichnung' => vorlagen_data['vorlagenbezeichnung'],
+                  'vorlage_id' => vorlagen_data['vorlagenbezeichnung'],
                   'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'],
                   'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'],
                   'sammel_pdf_url' => vorlagen_data['sammel_pdf_url']
                 }
-                ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlagenbezeichnung, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", vorlagen_detail.values_at('top_detail_id', 'vorlagenbezeichnung', 'vorlagenprotokolltext', 'vorlagen_pdf_url', 'sammel_pdf_url'))
+                ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlage_id, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", vorlagen_detail.values_at('top_detail_id', 'vorlage_id', 'vorlagenprotokolltext', 'vorlagen_pdf_url', 'sammel_pdf_url'))
               else
                 puts "Keine Vorlagen-Daten gefunden."
               end
