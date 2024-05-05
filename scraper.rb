@@ -95,17 +95,17 @@ def scrape_top_details(top_url)
       end
 
       {
-        top_protokolltext: top_protokolltext,
-        vorlagen_data: vorlagen_data
+        'top_protokolltext' => top_protokolltext,
+        'vorlagen_data' => vorlagen_data
       }
     else
       puts "Ungültige TOP-URL: #{top_url}"
-      return { top_protokolltext: nil, vorlagen_data: nil }
+      return { 'top_protokolltext' => nil, 'vorlagen_data' => nil }
     end
   rescue OpenURI::HTTPError => e
     puts "Fehler beim Zugriff auf die TOP-Seite: #{top_url}"
     puts "Fehlermeldung: #{e.message}"
-    return { top_protokolltext: nil, vorlagen_data: nil }
+    return { 'top_protokolltext' => nil, 'vorlagen_data' => nil }
   end
 end
 
@@ -172,20 +172,10 @@ def scrape_calendar_data(year, month)
 
       calendar_data = []
       document.css('tr:not(.emptyRow)').each do |row|
-        dow_element = row.at_css('.dow')
-        dom_element = row.at_css('.dom')
-        time_element = row.at_css('.time div')
-        title_element = row.at_css('.textCol a')
-        room_element = row.at_css('.raum div')
+        # ... (keep the existing data extraction logic)
 
         if dow_element && dom_element && time_element && title_element && room_element
-          dow = dow_element.text
-          dom = dom_element.text
-          time = time_element.text
-          title = title_element.text
-          url = "https://www.sitzungsdienst-schenefeld.de/bi/#{title_element['href']}"
-          room = room_element.text
-          formatted_date = extract_and_format_date(dow, dom, month, year)
+          # ... (keep the existing data extraction and formatting logic)
 
           calendar_event = {
             'date' => formatted_date,
@@ -206,7 +196,7 @@ def scrape_calendar_data(year, month)
               'event_detail_id' => event_detail_id.last,
               'top_protokolltext' => top_data['top_protokolltext']
             }
-            top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", top_detail.values_at('event_detail_id', 'top_protokolltext'))
+            top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [top_detail['event_detail_id'], top_detail['top_protokolltext']])
 
             vorlagen_data = top_data['vorlagen_data']
             if vorlagen_data
