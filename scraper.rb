@@ -212,10 +212,10 @@ def scrape_calendar_data(year, month)
             if vorlagen_data
               vorlagen_detail = {
                 'top_detail_id' => top_detail_id.last,
-                'vorlagenbezeichnung' => vorlagen_data['vorlagenbezeichnung'],
-                'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'],
-                'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'],
-                'sammel_pdf_url' => vorlagen_data['sammel_pdf_url']
+                'vorlagenbezeichnung' => vorlagen_data['vorlagenbezeichnung'] || '',
+                'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'] || '',
+                'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'] || '',
+                'sammel_pdf_url' => vorlagen_data['sammel_pdf_url'] || ''
               }
               ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlagenbezeichnung, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", vorlagen_detail.values_at('top_detail_id', 'vorlagenbezeichnung', 'vorlagenprotokolltext', 'vorlagen_pdf_url', 'sammel_pdf_url'))
             end
