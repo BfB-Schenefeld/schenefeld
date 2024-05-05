@@ -202,22 +202,24 @@ def scrape_calendar_data(year, month)
             event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_text, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", event_detail.values_at('calendar_event_id', 'index_number', 'betreff', 'top_url', 'vorlage_text', 'vorlage_url'))
 
             top_data = event_detail['top_data']
-            top_detail = {
-              'event_detail_id' => event_detail_id.last,
-              'top_protokolltext' => top_data['top_protokolltext']
-            }
-            top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [top_detail['event_detail_id'], top_detail['top_protokolltext']])
-
-            vorlagen_data = top_data['vorlagen_data']
-            if vorlagen_data
-              vorlagen_detail = {
-                'top_detail_id' => top_detail_id.last,
-                'vorlagenbezeichnung' => vorlagen_data['vorlagenbezeichnung'] || '',
-                'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'] || '',
-                'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'] || '',
-                'sammel_pdf_url' => vorlagen_data['sammel_pdf_url'] || ''
+            if top_data
+              top_detail = {
+                'event_detail_id' => event_detail_id.last,
+                'top_protokolltext' => top_data['top_protokolltext']
               }
-              ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlagenbezeichnung, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", vorlagen_detail.values_at('top_detail_id', 'vorlagenbezeichnung', 'vorlagenprotokolltext', 'vorlagen_pdf_url', 'sammel_pdf_url'))
+              top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [top_detail['event_detail_id'], top_detail['top_protokolltext']])
+
+              vorlagen_data = top_data['vorlagen_data']
+              if vorlagen_data
+                vorlagen_detail = {
+                  'top_detail_id' => top_detail_id.last,
+                  'vorlagenbezeichnung' => vorlagen_data['vorlagenbezeichnung'] || '',
+                  'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'] || '',
+                  'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'] || '',
+                  'sammel_pdf_url' => vorlagen_data['sammel_pdf_url'] || ''
+                }
+                ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlagenbezeichnung, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", vorlagen_detail.values_at('top_detail_id', 'vorlagenbezeichnung', 'vorlagenprotokolltext', 'vorlagen_pdf_url', 'sammel_pdf_url'))
+              end
             end
           end
 
