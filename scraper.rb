@@ -198,22 +198,27 @@ def scrape_calendar_data(year, month)
             'url' => url,
             'room' => room
           }
+          # Insert the calendar event into the calendar_events table and retrieve the inserted ID
           calendar_event_id = ScraperWiki.sqliteexecute("INSERT INTO calendar_events (date, time, title, url, room) VALUES (?, ?, ?, ?, ?)", calendar_event.values_at('date', 'time', 'title', 'url', 'room'))
           calendar_event_id = calendar_event_id.last
 
           event_data = scrape_event_details(url)
           event_data.each do |event_detail|
+            # Use the calendar_event_id from the previous insertion
             event_detail['calendar_event_id'] = calendar_event_id
-            event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_id, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [calendar_event_id, event_detail['index_number'], event_detail['betreff'], event_detail['top_url'], event_detail['vorlage_text'], event_detail['vorlage_url']])
+            # Insert the event detail into the event_details table and retrieve the inserted ID
+            event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_id, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [event_detail['calendar_event_id'], event_detail['index_number'], event_detail['betreff'], event_detail['top_url'], event_detail['vorlage_text'], event_detail['vorlage_url']])
             event_detail_id = event_detail_id.last
 
             top_data = event_detail['top_data']
             if top_data
               top_detail = {
+                # Use the event_detail_id from the previous insertion
                 'event_detail_id' => event_detail_id,
                 'top_protokolltext' => top_data['top_protokolltext']
               }
-              top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [event_detail_id, top_detail['top_protokolltext']])
+              # Insert the top detail into the top_details table and retrieve the inserted ID
+              top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [top_detail['event_detail_id'], top_detail['top_protokolltext']])
               top_detail_id = top_detail_id.last
 
               vorlagen_data = top_data['vorlagen_data']
@@ -225,13 +230,15 @@ def scrape_calendar_data(year, month)
                 puts "Vorlagen-Sammel-PDF-URL: #{vorlagen_data['sammel_pdf_url']}"
 
                 vorlagen_detail = {
+                  # Use the top_detail_id from the previous insertion
                   'top_detail_id' => top_detail_id,
                   'vorlage_id' => event_detail['vorlage_text'],
                   'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'],
                   'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'],
                   'sammel_pdf_url' => vorlagen_data['sammel_pdf_url']
                 }
-                ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlage_id, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", [top_detail_id, vorlagen_detail['vorlage_id'], vorlagen_detail['vorlagenprotokolltext'], vorlagen_detail['vorlagen_pdf_url'], vorlagen_detail['sammel_pdf_url']])
+                # Insert the vorlagen detail into the vorlagen_details table
+                ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlage_id, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", [vorlagen_detail['top_detail_id'], vorlagen_detail['vorlage_id'], vorlagen_detail['vorlagenprotokolltext'], vorlagen_detail['vorlagen_pdf_url'], vorlagen_detail['sammel_pdf_url']])
               else
                 puts "Keine Vorlagen-Daten gefunden."
               end
