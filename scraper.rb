@@ -1,159 +1,6 @@
-require 'open-uri'
-require 'nokogiri'
-require 'date'
 require 'scraperwiki'
-require 'json'
-
-def valid_url?(url)
-  url =~ /\A#{URI::regexp(['http', 'https'])}\z/
-end
-
-def extract_and_format_date(dow, dom, month, year)
-  dom = dom.to_s.rjust(2, '0')
-  month = month.to_s.rjust(2, '0')
-
-  dow_translation = {
-    'Mo' => 'Mon',
-    'Di' => 'Tue',
-    'Mi' => 'Wed',
-    'Do' => 'Thu',
-    'Fr' => 'Fri',
-    'Sa' => 'Sat',
-    'So' => 'Sun'
-  }
-  dow_en = dow_translation[dow]
-
-  date_str = "#{dow_en}, #{dom} #{Date::MONTHNAMES[month.to_i]} #{year}"
-  begin
-    date = Date.parse(date_str)
-    german_days = { 'Mon' => 'Mo.', 'Tue' => 'Di.', 'Wed' => 'Mi.', 'Thu' => 'Do.', 'Fri' => 'Fr.', 'Sat' => 'Sa.', 'Sun' => 'So.' }
-    german_day = german_days[date.strftime('%a')]
-    "#{german_day} #{date.strftime('%d.%m.%Y')}"
-  rescue ArgumentError
-    'Invalid date'
-  end
-end
-
-def scrape_vorlagen_details(vorlagen_url)
-  puts "Zugriff auf Vorlagenseite: #{vorlagen_url}"
-  begin
-    if valid_url?(vorlagen_url)
-      document = Nokogiri::HTML(open(vorlagen_url))
-
-      vorlagenbezeichnung = document.at_css('span#vobetreff a') ? document.at_css('span#vobetreff a').text.strip : ''
-      puts "Vorlagenbezeichnung: #{vorlagenbezeichnung}"
-
-      vorlagenprotokolltext = document.at_css('#mainContent') ? document.at_css('#mainContent').text.gsub(/\s+/, ' ').strip : ''
-      puts "Vorlagenprotokolltext: #{vorlagenprotokolltext}"
-
-      vorlagen_pdf_url = document.at_css('a.doclink.pdf') ? "https://www.sitzungsdienst-schenefeld.de/bi/#{document.at_css('a.doclink.pdf')['href']}" : ''
-      puts "Vorlagen-PDF-URL: #{vorlagen_pdf_url}"
-
-      sammel_pdf_url = document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first ? "https://www.sitzungsdienst-schenefeld.de/bi/#{document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first['href']}" : ''
-      puts "Vorlagen-Sammel-PDF-URL: #{sammel_pdf_url}"
-
-      {
-        'vorlagenbezeichnung' => vorlagenbezeichnung,
-        'vorlagenprotokolltext' => vorlagenprotokolltext,
-        'vorlagen_pdf_url' => vorlagen_pdf_url,
-        'sammel_pdf_url' => sammel_pdf_url
-      }
-    else
-      puts "Ungültige Vorlagen-URL: #{vorlagen_url}"
-      return nil
-    end
-  rescue OpenURI::HTTPError => e
-    puts "Fehler beim Zugriff auf die Vorlagenseite: #{vorlagen_url}"
-    puts "Fehlermeldung: #{e.message}"
-    return nil
-  end
-end
-
-def scrape_top_details(top_url)
-  puts "Zugriff auf TOP-Seite: #{top_url}"
-  begin
-    if valid_url?(top_url)
-      document = Nokogiri::HTML(open(top_url))
-  
-      main_content_elements = document.css('#mainContent div.expandedDiv, #mainContent div.expandedTitle')
-      top_protokolltext = main_content_elements.map { |element| element.text.strip }.join(" ").gsub(/\s+/, ' ')
-      puts "TOP-Protokolltext: #{top_protokolltext}"
-
-      vorlagen_betreff_element = document.at_css('span#vobetreff a')
-      vorlagen_data = nil
-      if vorlagen_betreff_element
-        vorlagen_betreff_text = vorlagen_betreff_element.text.strip
-        vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
-        puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_text}, Vorlagen-URL: #{vorlagen_url}"
-        vorlagen_data = scrape_vorlagen_details(vorlagen_url)
-      else
-        puts "Keine Vorlage vorhanden."
-      end
-
-      {
-        'top_protokolltext' => top_protokolltext,
-        'vorlagen_data' => vorlagen_data
-      }
-    else
-      puts "Ungültige TOP-URL: #{top_url}"
-      return { 'top_protokolltext' => nil, 'vorlagen_data' => nil }
-    end
-  rescue OpenURI::HTTPError => e
-    puts "Fehler beim Zugriff auf die TOP-Seite: #{top_url}"
-    puts "Fehlermeldung: #{e.message}"
-    return { 'top_protokolltext' => nil, 'vorlagen_data' => nil }
-  end
-end
-
-def scrape_event_details(event_url)
-  puts "Zugriff auf Sitzungsseite: #{event_url}"
-  begin
-    if valid_url?(event_url)
-      document = Nokogiri::HTML(open(event_url))
-
-      event_data = []
-      document.css('tr').each do |row|
-        index_number_element = row.at_css('td.tonr a')
-        index_number = index_number_element ? index_number_element.text.strip : ''
-
-        betreff_element = row.at_css('td.tobetreff div a') || row.at_css('td.tobetreff div')
-        betreff = betreff_element ? betreff_element.text.strip : ''
-
-        top_link = row.at_css('td.tobetreff div a')
-        top_url = top_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{top_link['href']}" : ""
-
-        vorlage_link = row.at_css('td.tovonr a')
-        vorlage_text = vorlage_link ? vorlage_link.text.strip : ""
-        vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : ""
-
-        if !index_number.empty? && !betreff.empty?
-          top_data = scrape_top_details(top_url)
-
-          event_data << {
-            'index_number' => index_number,
-            'betreff' => betreff,
-            'top_url' => top_url,
-            'vorlage_text' => vorlage_text,
-            'vorlage_url' => vorlage_url,
-            'top_data' => top_data
-          }
-          puts "Gefunden: #{index_number}, Betreff: #{betreff}, TOP-URL: #{top_url}, Vorlage: #{vorlage_text}, Vorlage URL: #{vorlage_url}"
-        end
-      end
-      event_data
-    else
-      puts "Ungültige Sitzungs-URL: #{event_url}"
-      return []
-    end
-  rescue OpenURI::HTTPError => e
-    puts "Fehler beim Zugriff auf die Sitzungsseite: #{event_url}"
-    puts "Fehlermeldung: #{e.message}"
-    return []
-  end
-end
 
 def drop_tables
-  ScraperWiki.sqliteexecute("DROP TABLE IF EXISTS data")
   ScraperWiki.sqliteexecute("DROP TABLE IF EXISTS calendar_events")
   ScraperWiki.sqliteexecute("DROP TABLE IF EXISTS event_details")
   ScraperWiki.sqliteexecute("DROP TABLE IF EXISTS top_details")
@@ -167,111 +14,43 @@ def create_tables
   ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS vorlagen_details (id INTEGER PRIMARY KEY, top_detail_id INTEGER, vorlage_id TEXT, vorlagenprotokolltext TEXT, vorlagen_pdf_url TEXT, sammel_pdf_url TEXT, FOREIGN KEY (top_detail_id) REFERENCES top_details(id))")
 end
 
-def scrape_calendar_data(year, month)
-  url = "https://www.sitzungsdienst-schenefeld.de/bi/si010_r.asp?MM=#{month}&YY=#{year}"
-  puts "Zugriff auf Kalenderseite: #{url}"
-  begin
-    if valid_url?(url)
-      document = Nokogiri::HTML(open(url))
+def insert_test_data
+  # Insert a calendar event
+  calendar_event_id = ScraperWiki.sqliteexecute("INSERT INTO calendar_events (date, time, title, url, room) VALUES (?, ?, ?, ?, ?)", ['2024-03-01', '09:00', 'Test Event', 'https://example.com/event', 'Room A'])
+  calendar_event_id = calendar_event_id.last
 
-      calendar_data = []
-      document.css('tr:not(.emptyRow)').each do |row|
-        dow_element = row.at_css('.dow')
-        dom_element = row.at_css('.dom')
-        time_element = row.at_css('.time div')
-        title_element = row.at_css('.textCol a')
-        room_element = row.at_css('.raum div')
+  # Insert an event detail
+  event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_id, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [calendar_event_id, '1', 'Test Betreff', 'https://example.com/top', 'V1', 'https://example.com/vorlage'])
+  event_detail_id = event_detail_id.last
 
-        if dow_element && dom_element && time_element && title_element && room_element
-          dow = dow_element.text
-          dom = dom_element.text
-          time = time_element.text
-          title = title_element.text
-          url = "https://www.sitzungsdienst-schenefeld.de/bi/#{title_element['href']}"
-          room = room_element.text
-          formatted_date = extract_and_format_date(dow, dom, month, year)
+  # Insert a top detail
+  top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [event_detail_id, 'Test TOP Protokolltext'])
+  top_detail_id = top_detail_id.last
 
-          calendar_event = {
-            'date' => formatted_date,
-            'time' => time,
-            'title' => title,
-            'url' => url,
-            'room' => room
-          }
-          # Insert the calendar event into the calendar_events table and retrieve the inserted ID
-          calendar_event_id = ScraperWiki.sqliteexecute("INSERT INTO calendar_events (date, time, title, url, room) VALUES (?, ?, ?, ?, ?)", calendar_event.values_at('date', 'time', 'title', 'url', 'room'))
-          calendar_event_id = calendar_event_id.last
-
-          event_data = scrape_event_details(url)
-          event_data.each do |event_detail|
-            # Use the calendar_event_id from the previous insertion
-            event_detail['calendar_event_id'] = calendar_event_id
-            # Insert the event detail into the event_details table and retrieve the inserted ID
-            event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_id, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [event_detail['calendar_event_id'], event_detail['index_number'], event_detail['betreff'], event_detail['top_url'], event_detail['vorlage_text'], event_detail['vorlage_url']])
-            event_detail_id = event_detail_id.last
-
-            top_data = event_detail['top_data']
-            if top_data
-              top_detail = {
-                # Use the event_detail_id from the previous insertion
-                'event_detail_id' => event_detail_id,
-                'top_protokolltext' => top_data['top_protokolltext']
-              }
-              # Insert the top detail into the top_details table and retrieve the inserted ID
-              top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [top_detail['event_detail_id'], top_detail['top_protokolltext']])
-              top_detail_id = top_detail_id.last
-
-              vorlagen_data = top_data['vorlagen_data']
-              if vorlagen_data
-                puts "Vorlagen-Daten gefunden:"
-                puts "Vorlagenbezeichnung: #{vorlagen_data['vorlagenbezeichnung']}"
-                puts "Vorlagenprotokolltext: #{vorlagen_data['vorlagenprotokolltext']}"
-                puts "Vorlagen-PDF-URL: #{vorlagen_data['vorlagen_pdf_url']}"
-                puts "Vorlagen-Sammel-PDF-URL: #{vorlagen_data['sammel_pdf_url']}"
-
-                vorlagen_detail = {
-                  # Use the top_detail_id from the previous insertion
-                  'top_detail_id' => top_detail_id,
-                  'vorlage_id' => event_detail['vorlage_text'],
-                  'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'],
-                  'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'],
-                  'sammel_pdf_url' => vorlagen_data['sammel_pdf_url']
-                }
-                # Insert the vorlagen detail into the vorlagen_details table
-                ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlage_id, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", [vorlagen_detail['top_detail_id'], vorlagen_detail['vorlage_id'], vorlagen_detail['vorlagenprotokolltext'], vorlagen_detail['vorlagen_pdf_url'], vorlagen_detail['sammel_pdf_url']])
-              else
-                puts "Keine Vorlagen-Daten gefunden."
-              end
-            end
-          end
-
-          calendar_data << calendar_event
-          puts "Datum: #{formatted_date}, Zeit: #{time}, Titel: #{title}, URL: #{url}, Raum: #{room}"
-        end
-      end
-
-      calendar_data
-    else
-      puts "Ungültige Kalender-URL: #{url}"
-      return []
-    end
-  rescue OpenURI::HTTPError => e
-    puts "Fehler beim Zugriff auf die Kalenderseite: #{url}"
-    puts "Fehlermeldung: #{e.message}"
-    return []
-  end
+  # Insert a vorlagen detail
+  ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlage_id, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", [top_detail_id, 'V1', 'Test Vorlagenprotokolltext', 'https://example.com/vorlagen.pdf', 'https://example.com/sammel.pdf'])
 end
 
 # Drop existing tables
 drop_tables
 
-# Create new tables with the desired column names
+# Create new tables
 create_tables
 
-# Example usage
-year = '2024'
-month = '3'
-calendar_data = scrape_calendar_data(year, month)
+# Insert test data
+insert_test_data
 
-# Print the scraped data for debugging
-puts calendar_data
+# Retrieve data from the tables
+calendar_events = ScraperWiki.select("* FROM calendar_events")
+event_details = ScraperWiki.select("* FROM event_details")
+top_details = ScraperWiki.select("* FROM top_details")
+vorlagen_details = ScraperWiki.select("* FROM vorlagen_details")
+
+puts "Calendar Events:"
+puts calendar_events
+puts "Event Details:"
+puts event_details
+puts "TOP Details:"
+puts top_details
+puts "Vorlagen Details:"
+puts vorlagen_details
