@@ -1,4 +1,5 @@
 require 'scraperwiki'
+require 'sqlite3'
 
 def drop_tables
   ScraperWiki.sqliteexecute("DROP TABLE IF EXISTS calendar_events")
@@ -15,20 +16,24 @@ def create_tables
 end
 
 def insert_test_data
+  db = SQLite3::Database.new('data.sqlite')
+
   # Insert a calendar event
-  calendar_event_id = ScraperWiki.sqliteexecute("INSERT INTO calendar_events (date, time, title, url, room) VALUES (?, ?, ?, ?, ?)", ['2024-03-01', '09:00', 'Test Event', 'https://example.com/event', 'Room A'])
-  calendar_event_id = calendar_event_id.last
+  db.execute("INSERT INTO calendar_events (date, time, title, url, room) VALUES (?, ?, ?, ?, ?)", ['2024-03-01', '09:00', 'Test Event', 'https://example.com/event', 'Room A'])
+  calendar_event_id = db.last_insert_row_id
 
   # Insert an event detail
-  event_detail_id = ScraperWiki.sqliteexecute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_id, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [calendar_event_id, '1', 'Test Betreff', 'https://example.com/top', 'V1', 'https://example.com/vorlage'])
-  event_detail_id = event_detail_id.last
+  db.execute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_id, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [calendar_event_id, '1', 'Test Betreff', 'https://example.com/top', 'V1', 'https://example.com/vorlage'])
+  event_detail_id = db.last_insert_row_id
 
   # Insert a top detail
-  top_detail_id = ScraperWiki.sqliteexecute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [event_detail_id, 'Test TOP Protokolltext'])
-  top_detail_id = top_detail_id.last
+  db.execute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [event_detail_id, 'Test TOP Protokolltext'])
+  top_detail_id = db.last_insert_row_id
 
   # Insert a vorlagen detail
-  ScraperWiki.sqliteexecute("INSERT INTO vorlagen_details (top_detail_id, vorlage_id, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", [top_detail_id, 'V1', 'Test Vorlagenprotokolltext', 'https://example.com/vorlagen.pdf', 'https://example.com/sammel.pdf'])
+  db.execute("INSERT INTO vorlagen_details (top_detail_id, vorlage_id, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", [top_detail_id, 'V1', 'Test Vorlagenprotokolltext', 'https://example.com/vorlagen.pdf', 'https://example.com/sammel.pdf'])
+
+  db.close
 end
 
 # Drop existing tables
@@ -47,10 +52,10 @@ top_details = ScraperWiki.select("* FROM top_details")
 vorlagen_details = ScraperWiki.select("* FROM vorlagen_details")
 
 puts "Calendar Events:"
-puts calendar_events
+puts calendar_events.inspect
 puts "Event Details:"
-puts event_details
+puts event_details.inspect
 puts "TOP Details:"
-puts top_details
+puts top_details.inspect
 puts "Vorlagen Details:"
-puts vorlagen_details
+puts vorlagen_details.inspect
