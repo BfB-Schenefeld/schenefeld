@@ -64,8 +64,10 @@ def get_event_type_abbr(event_title)
 end
 
 def generate_pdf_name(pdf_url, event_date, event_type_abbr, top_number, file_index, pdf_type)
-  suffix = pdf_type == 'Vorlage' ? '.V' : '.S'
-  file_name = "#{event_date.delete('.')}.#{event_type_abbr}.TOP#{top_number}.#{file_index}#{suffix}.pdf"
+  suffix = pdf_type == 'Vorlage' ? 'V' : 'S'
+  file_name = "#{event_date.delete('.')}.#{event_type_abbr}.TOP#{top_number}"
+  file_name += ".#{file_index}" if file_index > 1
+  file_name += ".#{suffix}.pdf"
   file_name
 end
 
@@ -87,11 +89,13 @@ def scrape_vorlagen_details(vorlagen_url, event_date, event_type_abbr, top_numbe
       sammel_pdf_url = document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first ? "https://www.sitzungsdienst-schenefeld.de/bi/#{document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first['href']}" : ''
       puts "Vorlagen-Sammel-PDF-URL: #{sammel_pdf_url}"
       
-      file_index = 1
-      vorlagen_pdf_name = generate_pdf_name(vorlagen_pdf_url, event_date, event_type_abbr, top_number, file_index, 'Vorlage')
-      file_index += 1
-      sammel_pdf_name = generate_pdf_name(sammel_pdf_url, event_date, event_type_abbr, top_number, file_index, 'Sammel')
-      
+     file_index = 1
+  vorlagen_pdf_name = generate_pdf_name(vorlagen_pdf_url, event_date, event_type_abbr, top_number, file_index, 'Vorlage')
+  if sammel_pdf_url.present?
+    file_index += 1
+    sammel_pdf_name = generate_pdf_name(sammel_pdf_url, event_date, event_type_abbr, top_number, file_index, 'Sammel')
+  else
+    sammel_pdf_name = ''
       {
       'vorlagenbezeichnung' => vorlagenbezeichnung,
       'vorlagenprotokolltext' => vorlagenprotokolltext,
