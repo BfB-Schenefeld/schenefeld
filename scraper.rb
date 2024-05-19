@@ -35,7 +35,42 @@ def extract_and_format_date(dow, dom, month, year)
   end
 end
 
-def scrape_vorlagen_details(vorlagen_url)
+def get_event_type_abbr(event_title)
+  event_types = {
+    'AG Finanzen' => 'AG.Finanz',
+    'AG ISEK' => 'AG.ISEK',
+    'AG Kita' => 'AG.Kita',
+    'AG Kommunalpolitik & Schule' => 'AG.Politik.Schule',
+    'AG Kriminalverhütung' => 'AG.Krimi',
+    'AG Nachschulische Betreuung' => 'AG.Nachschul.Betreuung',
+    'AG Schulentwicklung' => 'AG.Schulentwicklung',
+    'AG Stadtkern' => 'AG.Stadtkern',
+    'Bauen & Feuerwehr' => 'BuF',
+    'Finanzen' => 'Finanz',
+    'Gemeindewahl' => 'GW',
+    'Hauptausschuss' => 'HA',
+    'JUBIKU' => 'JUBIKU',
+    'Kinder & Jugend' => 'KuJ',
+    'Klimaschutz & Energie' => 'KEA',
+    'Ratsversammlung' => 'RV',
+    'Rechnungsprüfung' => 'RP',
+    'Schule, Sport & Kultur' => 'SSK',
+    'Schulleiterwahl' => 'SLW',
+    'Seniorenbeirat' => 'SB',
+    'Soziales, Jugend & Senioren' => 'SJuS',
+    'Stadtentwicklung & Umwelt' => 'ASU'
+  }
+  event_types[event_title] || 'NA'
+end
+
+def generate_pdf_name(pdf_url, event_date, event_type_abbr, top_number, file_index, pdf_type)
+  suffix = pdf_type == 'Vorlage' ? '.V' : '.S'
+  file_name = "#{event_date.delete('.')}.#{event_type_abbr}.TOP#{top_number}.#{file_index}#{suffix}.pdf"
+  file_name
+end
+
+def scrape_vorlagen_details(vorlagen_url, event_date, event_type_abbr, top_number)
+)
   puts "Zugriff auf Vorlagenseite: #{vorlagen_url}"
   begin
     if valid_url?(vorlagen_url)
@@ -52,7 +87,12 @@ def scrape_vorlagen_details(vorlagen_url)
 
       sammel_pdf_url = document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first ? "https://www.sitzungsdienst-schenefeld.de/bi/#{document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first['href']}" : ''
       puts "Vorlagen-Sammel-PDF-URL: #{sammel_pdf_url}"
-
+      
+      file_index = 1
+      vorlagen_pdf_name = generate_pdf_name(vorlagen_pdf_url, event_date, event_type_abbr, top_number, file_index, 'Vorlage')
+      file_index += 1
+      sammel_pdf_name = generate_pdf_name(sammel_pdf_url, event_date, event_type_abbr, top_number, file_index, 'Sammel')
+      
       {
         'vorlagenbezeichnung' => vorlagenbezeichnung,
         'vorlagenprotokolltext' => vorlagenprotokolltext,
@@ -70,12 +110,12 @@ def scrape_vorlagen_details(vorlagen_url)
   end
 end
 
-def scrape_top_details(top_url)
+def scrape_top_details(top_url, event_date, event_type_abbr, top_number)
   puts "Zugriff auf TOP-Seite: #{top_url}"
   begin
     if valid_url?(top_url)
       document = Nokogiri::HTML(open(top_url))
-  
+
       main_content_elements = document.css('#mainContent div.expandedDiv, #mainContent div.expandedTitle')
       top_protokolltext = main_content_elements.map { |element| element.text.strip }.join(" ").gsub(/\s+/, ' ')
       puts "TOP-Protokolltext: #{top_protokolltext}"
@@ -86,7 +126,7 @@ def scrape_top_details(top_url)
         vorlagen_betreff_text = vorlagen_betreff_element.text.strip
         vorlagen_url = "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlagen_betreff_element['href']}"
         puts "Vorlagen-Betreff gefunden: #{vorlagen_betreff_text}, Vorlagen-URL: #{vorlagen_url}"
-        vorlagen_data = scrape_vorlagen_details(vorlagen_url)
+        vorlagen_data = scrape_vorlagen_details(vorlagen_url, event_date, event_type_abbr, top_number)
       else
         puts "Keine Vorlage vorhanden."
       end
@@ -106,7 +146,7 @@ def scrape_top_details(top_url)
   end
 end
 
-def scrape_event_details(event_url)
+def scrape_event_details(event_url, event_date, event_type_abbr)
   puts "Zugriff auf Sitzungsseite: #{event_url}"
   begin
     if valid_url?(event_url)
@@ -128,7 +168,7 @@ def scrape_event_details(event_url)
         vorlage_url = vorlage_link ? "https://www.sitzungsdienst-schenefeld.de/bi/#{vorlage_link['href']}" : ""
 
         if !index_number.empty? && !betreff.empty?
-          top_data = scrape_top_details(top_url)
+          top_data = scrape_top_details(top_url, event_date, event_type_abbr, index_number)
 
           event_data << {
             'index_number' => index_number,
@@ -194,6 +234,8 @@ def scrape_calendar_data(year, month)
           room = room_element.text
           formatted_date = extract_and_format_date(dow, dom, month, year)
 
+          event_type_abbr = get_event_type_abbr(title)
+
           calendar_event = {
             'date' => formatted_date,
             'time' => time,
@@ -201,18 +243,14 @@ def scrape_calendar_data(year, month)
             'url' => url,
             'room' => room
           }
-          # Insert the calendar event into the calendar_events table and retrieve the inserted ID
           db.execute("INSERT INTO calendar_events (date, time, title, url, room) VALUES (?, ?, ?, ?, ?)", calendar_event.values_at('date', 'time', 'title', 'url', 'room'))
           calendar_event_id = db.last_insert_row_id
 
-          event_data = scrape_event_details(url)
+          event_data = scrape_event_details(url, formatted_date, event_type_abbr)
           event_data.each do |event_detail|
-            # Use the calendar_event_id from the previous insertion
             event_detail['calendar_event_id'] = calendar_event_id
-            # Insert the event detail into the event_details table and retrieve the inserted ID
             db.execute("INSERT INTO event_details (calendar_event_id, index_number, betreff, top_url, vorlage_id, vorlage_url) VALUES (?, ?, ?, ?, ?, ?)", [calendar_event_id, event_detail['index_number'], event_detail['betreff'], event_detail['top_url'], event_detail['vorlage_text'], event_detail['vorlage_url']])
             event_detail_id = db.last_insert_row_id
-
             top_data = event_detail['top_data']
             if top_data
               top_detail = {
