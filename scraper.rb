@@ -88,21 +88,23 @@ def scrape_vorlagen_details(vorlagen_url, event_date, event_type_abbr, top_numbe
 
       sammel_pdf_url = document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first ? "https://www.sitzungsdienst-schenefeld.de/bi/#{document.xpath("//a[contains(@data-simpletooltip-text, 'Vorlage-Sammeldokument')]").first['href']}" : ''
       puts "Vorlagen-Sammel-PDF-URL: #{sammel_pdf_url}"
-      
-     file_index = 1
-  vorlagen_pdf_name = generate_pdf_name(vorlagen_pdf_url, event_date, event_type_abbr, top_number, file_index, 'Vorlage')
-  if sammel_pdf_url.present?
-    file_index += 1
-    sammel_pdf_name = generate_pdf_name(sammel_pdf_url, event_date, event_type_abbr, top_number, file_index, 'Sammel')
-  else
-    sammel_pdf_name = ''
+
+      file_index = 1
+      vorlagen_pdf_name = generate_pdf_name(vorlagen_pdf_url, event_date, event_type_abbr, top_number, file_index, 'Vorlage')
+      if !sammel_pdf_url.empty?
+        file_index += 1
+        sammel_pdf_name = generate_pdf_name(sammel_pdf_url, event_date, event_type_abbr, top_number, file_index, 'Sammel')
+      else
+        sammel_pdf_name = ''
+      end
+
       {
-      'vorlagenbezeichnung' => vorlagenbezeichnung,
-      'vorlagenprotokolltext' => vorlagenprotokolltext,
-      'vorlagen_pdf_url' => vorlagen_pdf_url,
-      'vorlagen_pdf_name' => vorlagen_pdf_name,
-      'sammel_pdf_url' => sammel_pdf_url,
-      'sammel_pdf_name' => sammel_pdf_name
+        'vorlagenbezeichnung' => vorlagenbezeichnung,
+        'vorlagenprotokolltext' => vorlagenprotokolltext,
+        'vorlagen_pdf_url' => vorlagen_pdf_url,
+        'vorlagen_pdf_name' => vorlagen_pdf_name,
+        'sammel_pdf_url' => sammel_pdf_url,
+        'sammel_pdf_name' => sammel_pdf_name
       }
     else
       puts "Ungültige Vorlagen-URL: #{vorlagen_url}"
