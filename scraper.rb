@@ -12,27 +12,7 @@ end
 def extract_and_format_date(dow, dom, month, year)
   dom = dom.to_s.rjust(2, '0')
   month = month.to_s.rjust(2, '0')
-
-  dow_translation = {
-    'Mo' => 'Mon',
-    'Di' => 'Tue',
-    'Mi' => 'Wed',
-    'Do' => 'Thu',
-    'Fr' => 'Fri',
-    'Sa' => 'Sat',
-    'So' => 'Sun'
-  }
-  dow_en = dow_translation[dow]
-
-  date_str = "#{dow_en}, #{dom} #{Date::MONTHNAMES[month.to_i]} #{year}"
-  begin
-    date = Date.parse(date_str)
-    german_days = { 'Mon' => 'Mo.', 'Tue' => 'Di.', 'Wed' => 'Mi.', 'Thu' => 'Do.', 'Fri' => 'Fr.', 'Sat' => 'Sa.', 'Sun' => 'So.' }
-    german_day = german_days[date.strftime('%a')]
-    "#{german_day} #{date.strftime('%d.%m.%Y')}"
-  rescue ArgumentError
-    'Invalid date'
-  end
+  "#{year}#{month}#{dom}"
 end
 
 def get_event_type_abbr(event_title)
@@ -60,15 +40,17 @@ def get_event_type_abbr(event_title)
     'Soziales, Jugend & Senioren' => 'SJuS',
     'Stadtentwicklung & Umwelt' => 'ASU'
   }
+  cleaned_title = event_title.split(/[-:]/)[0].strip
   event_types.each do |full_title, abbr|
-    return abbr if event_title.downcase == full_title.downcase
+    return abbr if cleaned_title.downcase == full_title.downcase
   end
   'NA'
 end
 
 def generate_pdf_name(pdf_url, event_date, event_type_abbr, top_number, file_index, pdf_type)
   suffix = pdf_type == 'Vorlage' ? 'V' : 'S'
-  file_name = "#{event_date.delete('.')}.#{event_type_abbr}.TOP#{top_number}"
+  top_number = top_number.to_s.gsub('Ö', '').rjust(2, '0')
+  file_name = "#{event_date}.#{event_type_abbr}.TOP#{top_number}"
   file_name += ".#{file_index}" if file_index > 1
   file_name += ".#{suffix}.pdf"
   file_name
@@ -240,6 +222,7 @@ def scrape_calendar_data(year, month)
           dom = dom_element.text
           time = time_element.text
           title = title_element.text
+          puts "Eventtitel: #{title}"
           url = "https://www.sitzungsdienst-schenefeld.de/bi/#{title_element['href']}"
           room = room_element.text
           formatted_date = extract_and_format_date(dow, dom, month, year)
