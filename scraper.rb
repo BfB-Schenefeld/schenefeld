@@ -40,16 +40,15 @@ def get_event_type_abbr(event_title)
     'Soziales, Jugend & Senioren' => 'SJuS',
     'Stadtentwicklung & Umwelt' => 'ASU'
   }
-  cleaned_title = event_title.split(/[-:]/)[0].strip
-  event_types.each do |full_title, abbr|
-    return abbr if cleaned_title.downcase == full_title.downcase
+  event_types.each do |keyword, abbr|
+    return abbr if event_title.include?(keyword)
   end
   'NA'
 end
 
 def generate_pdf_name(pdf_url, event_date, event_type_abbr, top_number, file_index, pdf_type)
   suffix = pdf_type == 'Vorlage' ? 'V' : 'S'
-  top_number = top_number.to_s.gsub('Ö', '').rjust(2, '0')
+  top_number = top_number.to_s.gsub(/\D/, '').rjust(2, '0')
   file_name = "#{event_date}.#{event_type_abbr}.TOP#{top_number}"
   file_name += ".#{file_index}" if file_index > 1
   file_name += ".#{suffix}.pdf"
