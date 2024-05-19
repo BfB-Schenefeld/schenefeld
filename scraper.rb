@@ -93,10 +93,12 @@ def scrape_vorlagen_details(vorlagen_url, event_date, event_type_abbr, top_numbe
       sammel_pdf_name = generate_pdf_name(sammel_pdf_url, event_date, event_type_abbr, top_number, file_index, 'Sammel')
       
       {
-        'vorlagenbezeichnung' => vorlagenbezeichnung,
-        'vorlagenprotokolltext' => vorlagenprotokolltext,
-        'vorlagen_pdf_url' => vorlagen_pdf_url,
-        'sammel_pdf_url' => sammel_pdf_url
+      'vorlagenbezeichnung' => vorlagenbezeichnung,
+      'vorlagenprotokolltext' => vorlagenprotokolltext,
+      'vorlagen_pdf_url' => vorlagen_pdf_url,
+      'vorlagen_pdf_name' => vorlagen_pdf_name,
+      'sammel_pdf_url' => sammel_pdf_url,
+      'sammel_pdf_name' => sammel_pdf_name
       }
     else
       puts "Ungültige Vorlagen-URL: #{vorlagen_url}"
@@ -204,7 +206,7 @@ def create_tables
   ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS calendar_events (id INTEGER PRIMARY KEY, date TEXT, time TEXT, title TEXT, url TEXT, room TEXT)")
   ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS event_details (id INTEGER PRIMARY KEY, calendar_event_id INTEGER, index_number TEXT, betreff TEXT, top_url TEXT, vorlage_id TEXT, vorlage_url TEXT, FOREIGN KEY (calendar_event_id) REFERENCES calendar_events(id))")
   ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS top_details (id INTEGER PRIMARY KEY, event_detail_id INTEGER, top_protokolltext TEXT, FOREIGN KEY (event_detail_id) REFERENCES event_details(id))")
-  ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS vorlagen_details (id INTEGER PRIMARY KEY, top_detail_id INTEGER, vorlage_id TEXT, vorlagenprotokolltext TEXT, vorlagen_pdf_url TEXT, sammel_pdf_url TEXT, FOREIGN KEY (top_detail_id) REFERENCES top_details(id))")
+  ScraperWiki.sqliteexecute("CREATE TABLE IF NOT EXISTS vorlagen_details (id INTEGER PRIMARY KEY, top_detail_id INTEGER, vorlage_id TEXT, vorlagenprotokolltext TEXT, vorlagen_pdf_url TEXT, vorlagen_pdf_name TEXT, sammel_pdf_url TEXT, sammel_pdf_name TEXT, FOREIGN KEY (top_detail_id) REFERENCES top_details(id))")
 end
 
 def scrape_calendar_data(year, month)
@@ -261,27 +263,29 @@ def scrape_calendar_data(year, month)
               db.execute("INSERT INTO top_details (event_detail_id, top_protokolltext) VALUES (?, ?)", [event_detail_id, top_detail['top_protokolltext']])
               top_detail_id = db.last_insert_row_id
 
-              vorlagen_data = top_data['vorlagen_data']
-              if vorlagen_data
-                puts "Vorlagen-Daten gefunden:"
-                puts "Vorlagenbezeichnung: #{vorlagen_data['vorlagenbezeichnung']}"
-                puts "Vorlagenprotokolltext: #{vorlagen_data['vorlagenprotokolltext']}"
-                puts "Vorlagen-PDF-URL: #{vorlagen_data['vorlagen_pdf_url']}"
-                puts "Vorlagen-Sammel-PDF-URL: #{vorlagen_data['sammel_pdf_url']}"
+             vorlagen_data = top_data['vorlagen_data']
+             if vorlagen_data
+              puts "Vorlagen-Daten gefunden:"
+              puts "Vorlagenbezeichnung: #{vorlagen_data['vorlagenbezeichnung']}"
+              puts "Vorlagenprotokolltext: #{vorlagen_data['vorlagenprotokolltext']}"
+              puts "Vorlagen-PDF-URL: #{vorlagen_data['vorlagen_pdf_url']}"
+              puts "Vorlagen-PDF-Name: #{vorlagen_data['vorlagen_pdf_name']}"
+              puts "Vorlagen-Sammel-PDF-URL: #{vorlagen_data['sammel_pdf_url']}"
+              puts "Vorlagen-Sammel-PDF-Name: #{vorlagen_data['sammel_pdf_name']}"
 
-                vorlagen_detail = {
-                  # Use the top_detail_id from the previous insertion
-                  'top_detail_id' => top_detail_id,
-                  'vorlage_id' => event_detail['vorlage_text'],
-                  'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'],
-                  'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'],
-                  'sammel_pdf_url' => vorlagen_data['sammel_pdf_url']
-                }
-                # Insert the vorlagen detail into the vorlagen_details table
-                db.execute("INSERT INTO vorlagen_details (top_detail_id, vorlage_id, vorlagenprotokolltext, vorlagen_pdf_url, sammel_pdf_url) VALUES (?, ?, ?, ?, ?)", [top_detail_id, vorlagen_detail['vorlage_id'], vorlagen_detail['vorlagenprotokolltext'], vorlagen_detail['vorlagen_pdf_url'], vorlagen_detail['sammel_pdf_url']])
-              else
-                puts "Keine Vorlagen-Daten gefunden."
-              end
+              vorlagen_detail = {
+              'top_detail_id' => top_detail_id,
+              'vorlage_id' => event_detail['vorlage_text'],
+              'vorlagenprotokolltext' => vorlagen_data['vorlagenprotokolltext'],
+              'vorlagen_pdf_url' => vorlagen_data['vorlagen_pdf_url'],
+              'vorlagen_pdf_name' => vorlagen_data['vorlagen_pdf_name'],
+              'sammel_pdf_url' => vorlagen_data['sammel_pdf_url'],
+              'sammel_pdf_name' => vorlagen_data['sammel_pdf_name']
+             }
+            db.execute("INSERT INTO vorlagen_details (top_detail_id, vorlage_id, vorlagenprotokolltext, vorlagen_pdf_url, vorlagen_pdf_name, sammel_pdf_url, sammel_pdf_name) VALUES (?, ?, ?, ?, ?, ?, ?)", [vorlagen_detail['top_detail_id'], vorlagen_detail['vorlage_id'], vorlagen_detail['vorlagenprotokolltext'], vorlagen_detail['vorlagen_pdf_url'], vorlagen_detail['vorlagen_pdf_name'], vorlagen_detail['sammel_pdf_url'], vorlagen_detail['sammel_pdf_name']])
+            else
+              puts "Keine Vorlagen-Daten gefunden."
+            end
             end
           end
 
