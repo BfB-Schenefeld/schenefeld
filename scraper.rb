@@ -18,27 +18,27 @@ end
 def get_event_type_abbr(event_title)
   event_types = {
     'AG Finanzen' => 'AG.Finanz',
-    'AG ISEK' => 'AG.ISEK',
-    'AG Kita' => 'AG.Kita',
-    'AG Kommunalpolitik & Schule' => 'AG.Politik.Schule',
-    'AG Kriminalverhütung' => 'AG.Krimi',
-    'AG Nachschulische Betreuung' => 'AG.Nachschul.Betreuung',
-    'AG Schulentwicklung' => 'AG.Schulentwicklung',
-    'AG Stadtkern' => 'AG.Stadtkern',
-    'Bauen & Feuerwehr' => 'BuF',
+    'ISEK' => 'AG.ISEK',
+    'Kita' => 'AG.Kita',
+    'Kommunalpolitik' => 'AG.Politik.Schule',
+    'Kriminalverhütung' => 'AG.Krimi',
+    'Betreuung' => 'AG.Nachschul.Betreuung',
+    'Schulentwicklung' => 'AG.Schulentwicklung',
+    'Stadtkern' => 'AG.Stadtkern',
+    'Feuerwehr' => 'BuF',
     'Finanzen' => 'Finanz',
     'Gemeindewahl' => 'GW',
     'Hauptausschuss' => 'HA',
     'JUBIKU' => 'JUBIKU',
-    'Kinder & Jugend' => 'KuJ',
-    'Klimaschutz & Energie' => 'KEA',
+    'Jugend' => 'KuJ',
+    'Klimaschutz' => 'KEA',
     'Ratsversammlung' => 'RV',
     'Rechnungsprüfung' => 'RP',
-    'Schule, Sport & Kultur' => 'SSK',
+    'Kultur' => 'SSK',
     'Schulleiterwahl' => 'SLW',
     'Seniorenbeirat' => 'SB',
-    'Soziales, Jugend & Senioren' => 'SJuS',
-    'Stadtentwicklung & Umwelt' => 'ASU'
+    'Soziales' => 'SJuS',
+    'Stadtentwicklung' => 'ASU'
   }
   event_types.each do |keyword, abbr|
     return abbr if event_title.include?(keyword)
