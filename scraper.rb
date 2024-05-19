@@ -70,7 +70,6 @@ def generate_pdf_name(pdf_url, event_date, event_type_abbr, top_number, file_ind
 end
 
 def scrape_vorlagen_details(vorlagen_url, event_date, event_type_abbr, top_number)
-)
   puts "Zugriff auf Vorlagenseite: #{vorlagen_url}"
   begin
     if valid_url?(vorlagen_url)
