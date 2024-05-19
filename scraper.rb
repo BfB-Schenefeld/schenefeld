@@ -60,7 +60,10 @@ def get_event_type_abbr(event_title)
     'Soziales, Jugend & Senioren' => 'SJuS',
     'Stadtentwicklung & Umwelt' => 'ASU'
   }
-  event_types[event_title] || 'NA'
+  event_types.each do |full_title, abbr|
+    return abbr if event_title.downcase == full_title.downcase
+  end
+  'NA'
 end
 
 def generate_pdf_name(pdf_url, event_date, event_type_abbr, top_number, file_index, pdf_type)
