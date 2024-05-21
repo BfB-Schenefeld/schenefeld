@@ -302,15 +302,35 @@ def scrape_calendar_data(year, month)
 end
 
 # Drop existing tables
-drop_tables
+#drop_tables
 
-# Create new tables with the desired column names
-create_tables
+def tables_exist?
+  begin
+    ScraperWiki.sqliteexecute("SELECT 1 FROM calendar_events LIMIT 1")
+    true
+  rescue SQLite3::SQLException
+    false
+  end
+end
 
-# Example usage
-year = '2024'
-month = '4'
-calendar_data = scrape_calendar_data(year, month)
+# Create new tables with the desired column names if they don't exist
+create_tables unless tables_exist?
+
+# Define the range of months to scrape
+month_range = [
+  [2022, 1], [2022, 2], [2022, 3], [2022, 4], [2022, 5], [2022, 6],
+  [2022, 7], [2022, 8], [2022, 9], [2022, 10], [2022, 11], [2022, 12],
+  [2023, 1], [2023, 2], [2023, 3], [2023, 4], [2023, 5], [2023, 6],
+  [2023, 7], [2023, 8], [2023, 9], [2023, 10], [2023, 11], [2023, 12],
+  [2024, 1], [2024, 2], [2024, 3], [2024, 4]
+]
+
+# Scrape the data for each month in the range
+month_range.each do |year, month|
+  calendar_data = scrape_calendar_data(year.to_s, month.to_s)
+  # Print the scraped data for debugging
+  puts calendar_data
+end
 
 # Print the scraped data for debugging
 puts calendar_data
